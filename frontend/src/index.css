@@ -1,0 +1,212 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: #0f172a;
+    --primary-foreground: #ffffff;
+    --secondary: #f1f5f9;
+    --secondary-foreground: #0f172a;
+    --accent: #3b82f6;
+    --accent-foreground: #ffffff;
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #3b82f6;
+    --radius: 0.75rem;
+  }
+
+  /* Global Shadow Enforcer - Overrides all Tailwind shadow utilities project-wide */
+  .shadow-sm,
+  .shadow,
+  .shadow-md,
+  .shadow-lg,
+  .shadow-xl,
+  .shadow-2xl,
+  .crm-card,
+  .crm-table-container,
+  [class*="shadow-"] {
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px !important;
+  }
+}
+
+@layer components {
+
+  /* Global Card Style */
+  .crm-card {
+    @apply rounded-[2.5rem] bg-white p-8 transition-all duration-500 border border-slate-100/50;
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+  }
+
+  .crm-card:hover {
+    @apply -translate-y-1 cursor-pointer border-indigo-500;
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+  }
+
+  /* Standardized Container */
+  .crm-container {
+    @apply max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8;
+  }
+
+  /* Spacing Utilities */
+  .crm-section {
+    @apply mb-8;
+  }
+
+  .crm-grid {
+    @apply grid gap-6;
+  }
+
+  /* Enhanced Button Base */
+  .btn-primary {
+    @apply h-10 px-6 rounded-xl flex items-center justify-center transition-all duration-200 font-bold text-sm tracking-tight shadow-md shadow-indigo-500/10 active:scale-95 text-white bg-[#0f172a] hover:bg-black;
+  }
+
+  .btn-secondary {
+    @apply h-10 px-6 rounded-xl flex items-center justify-center transition-all duration-200 font-bold text-sm tracking-tight border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 active:scale-95;
+  }
+
+  /* Enhanced Table */
+  .crm-table-container {
+    @apply overflow-x-auto rounded-2xl bg-white border border-slate-200/60;
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+  }
+
+  .crm-table {
+    @apply w-full text-left border-collapse;
+  }
+
+  .crm-table thead {
+    @apply sticky top-0 bg-slate-50/80 backdrop-blur-md z-10;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .crm-table th {
+    @apply px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest;
+  }
+
+  .crm-table tr {
+    @apply transition-colors duration-200;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .crm-table tr:hover {
+    @apply bg-slate-50/50;
+  }
+
+  .crm-table td {
+    @apply px-6 py-4 text-xs font-medium text-slate-600;
+  }
+
+  /* Status Badges */
+  .badge {
+    @apply px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border;
+  }
+
+  .badge-success {
+    @apply bg-emerald-50 text-emerald-600 border-emerald-100;
+  }
+
+  .badge-warning {
+    @apply bg-amber-50 text-amber-600 border-amber-100;
+  }
+
+  .badge-error {
+    @apply bg-rose-50 text-rose-600 border-rose-100;
+  }
+
+  .badge-info {
+    @apply bg-blue-50 text-blue-600 border-blue-100;
+  }
+
+  /* Global Hover Border Enforcer - Targets common UI containers */
+  .crm-table-container,
+  .bg-white.rounded-xl,
+  .bg-white.rounded-2xl,
+  .bg-white.rounded-3xl,
+  .bg-white.rounded-\[2rem\],
+  .bg-white.rounded-\[2\.5rem\],
+  .bg-white.rounded-\[3rem\] {
+    border: 1px solid #f1f5f9;
+    /* Slate 100 base */
+    transition: border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .crm-table-container:hover,
+  .bg-white.rounded-xl:hover,
+  .bg-white.rounded-2xl:hover,
+  .bg-white.rounded-3xl:hover,
+  .bg-white.rounded-\[2rem\],
+  .bg-white.rounded-\[2\.5rem\],
+  .bg-white.rounded-\[3rem\] {
+    border-color: #6366f1 !important;
+    /* Indigo 500 */
+  }
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  @apply bg-[#F8FAFC] text-[#1e293b];
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom scrollbar for areas that need it */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-colors;
+}
+
+/* Global Enforcer for Modal Scrolling */
+/* Ensures all fixed overlay modals scroll cleanly on short screens */
+.fixed.inset-0>.bg-white,
+.fixed.inset-0>.crm-card {
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+
+.fixed.inset-0>.bg-white::-webkit-scrollbar,
+.fixed.inset-0>.crm-card::-webkit-scrollbar {
+  width: 6px;
+}
+
+.fixed.inset-0>.bg-white::-webkit-scrollbar-track,
+.fixed.inset-0>.crm-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.fixed.inset-0>.bg-white::-webkit-scrollbar-thumb,
+.fixed.inset-0>.crm-card::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 20px;
+}

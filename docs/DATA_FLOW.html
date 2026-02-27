@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRM System – Data Flow</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      padding: 40px;
+    }
+
+    h1.main-title {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      margin-bottom: 36px;
+      color: #111;
+    }
+
+    /* ── Section Headers ── */
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 28px 0 20px;
+      font-weight: 800;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: #555;
+      text-transform: uppercase;
+    }
+    .section-label::before,
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #ccc;
+    }
+    .section-label.dashed::before,
+    .section-label.dashed::after {
+      border-top: 2px dashed #bbb;
+      background: none;
+    }
+
+    /* ── Boxes ── */
+    .box {
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-weight: 800;
+      font-size: 13px;
+      text-align: center;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.3;
+    }
+    .box .sub {
+      font-weight: 400;
+      font-size: 11px;
+      text-transform: none;
+      letter-spacing: 0;
+      color: inherit;
+      opacity: 0.85;
+      margin-top: 3px;
+    }
+
+    .red    { background: #e74c3c; color: #fff; border: 2px solid #c0392b; }
+    .blue   { background: #2980b9; color: #fff; border: 2px solid #1a6a9a; }
+    .green  { background: #27ae60; color: #fff; border: 2px solid #1e8449; }
+    .orange { background: #e67e22; color: #fff; border: 2px solid #ca6f1e; }
+    .yellow { background: #f1c40f; color: #1a1a1a; border: 2px solid #d4ac0d; }
+    .light-blue { background: #aed6f1; color: #1a4a6e; border: 2px solid #7fb3d3; }
+    .purple { background: #8e44ad; color: #fff; border: 2px solid #7d3c98; }
+    .dark-red { background: #c0392b; color: #fff; border: 2px solid #96281b; }
+    .steel-blue { background: #2471a3; color: #fff; border: 2px solid #1a5276; }
+    .outline { background: #f8f9fa; color: #333; border: 2px solid #aaa; border-radius: 8px; }
+    .outline-green { background: #d5f5e3; color: #1e8449; border: 2px solid #27ae60; border-radius: 8px; }
+    .outline-yellow { background: #fef9e7; color: #7d6608; border: 2px solid #d4ac0d; border-radius: 8px; }
+    .pill-outline { background: #fff; color: #333; border: 2px solid #aaa; border-radius: 8px; padding: 8px 18px; font-size: 12px; }
+
+    /* ── Arrow helpers ── */
+    .arrow-down {
+      width: 2px;
+      background: #555;
+      margin: 0 auto;
+      position: relative;
+    }
+    .arrow-down::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid #555;
+    }
+
+    /* ════════════════════════
+       SECTION 1 – SYSTEM ROLE ASSIGNMENT
+       ════════════════════════ */
+    .role-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* Super Admin */
+    .super-admin-row { display: flex; justify-content: center; }
+
+    /* Connector from Super Admin down & branching */
+    .branch-connector {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 0;
+      width: 100%;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    /* Left branch to MANAGER */
+    .left-branch, .right-branch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .center-branch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      max-width: 260px;
+    }
+
+    /* horizontal line spanning from Manager through Admin to Team Leader */
+    .horizontal-connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 700px;
+      margin: 0 auto;
+      gap: 0;
+    }
+
+    .h-line { height: 2px; background: #555; flex: 1; }
+    .v-drop { width: 2px; background: #555; height: 30px; }
+
+    .roles-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 0;
+      width: 100%;
+      max-width: 740px;
+      margin: 0 auto;
+    }
+
+    .role-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+
+    .right-sub {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-left: 16px;
+      gap: 10px;
+    }
+
+    /* ════════════════════════
+       SECTION 2 – LEAD ASSIGNMENT FLOW
+       ════════════════════════ */
+    .lead-flow {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 0;
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .flow-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    .flow-box-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 2px solid #aaa;
+      border-radius: 12px;
+      padding: 14px 18px;
+      background: #fafafa;
+      min-width: 160px;
+    }
+
+    .flow-box-group .group-title {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .channel-icons {
+      display: flex;
+      gap: 8px;
+      font-size: 22px;
+      margin-bottom: 6px;
+    }
+
+    .h-arrow {
+      display: flex;
+      align-items: center;
+      margin: 0 10px;
+      color: #555;
+      font-size: 22px;
+      margin-top: 28px;
+    }
+
+    .ai-group {
+      border: 2px solid #aaa;
+      border-radius: 12px;
+      padding: 12px 16px;
+      background: #fafafa;
+      min-width: 180px;
+    }
+    .ai-group .group-title {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #333;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .ai-group .assignment-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .manual-group {
+      border: 2px solid #aaa;
+      border-radius: 12px;
+      padding: 12px 16px;
+      background: #fafafa;
+      min-width: 170px;
+    }
+    .manual-group .group-title {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #333;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .manual-routes {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .manual-route-item {
+      background: #fff;
+      border: 1.5px solid #aaa;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 11px;
+      color: #333;
+    }
+
+    .small-v-arrow {
+      width: 2px;
+      height: 18px;
+      background: #555;
+      margin: 0 auto;
+      position: relative;
+    }
+    .small-v-arrow::after {
+      content: '';
+      position: absolute;
+      bottom: -7px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 7px solid #555;
+    }
+
+    .bidirectional {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin: 0 4px;
+      margin-top: 28px;
+    }
+    .bidirectional .line { height: 2px; width: 50px; background: #555; }
+    .bidirectional .arrows { font-size: 14px; }
+
+    /* ════════════════════════
+       SECTION 3 – REPORTING
+       ════════════════════════ */
+    .reporting-row {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-top: 8px;
+    }
+
+    /* Print */
+    @media print {
+      body { padding: 20px; }
+      @page { margin: 15mm; size: A4 landscape; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="main-title">CRM System Role &amp; Lead Assignment Flow</h1>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- SECTION 1: SYSTEM ROLE ASSIGNMENT     -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section-label">System Role Assignment</div>
+
+  <div class="role-section">
+
+    <!-- SUPER ADMIN -->
+    <div style="display:flex;justify-content:center;">
+      <div class="box red" style="min-width:180px;">
+        SUPER ADMIN
+        <span class="sub">Creates Admins</span>
+      </div>
+    </div>
+
+    <!-- Vertical line down from Super Admin -->
+    <div style="width:2px;height:30px;background:#555;margin:0 auto;"></div>
+
+    <!-- Horizontal T-bar: Manager ←→ Admin ←→ Team Leader + Customer Support -->
+    <div style="display:flex;align-items:flex-start;justify-content:center;width:100%;max-width:780px;margin:0 auto;gap:0;">
+
+      <!-- MANAGER col -->
+      <div style="display:flex;flex-direction:column;align-items:center;flex:1;padding-top:14px;">
+        <div style="width:100%;height:2px;background:#555;"></div>
+        <div style="width:2px;height:20px;background:#555;"></div>
+        <div class="box green" style="min-width:150px;">
+          MANAGER
+          <span class="sub">Monitors Teams</span>
+        </div>
+      </div>
+
+      <!-- Center line segment (left of Admin) -->
+      <div style="display:flex;flex-direction:column;align-items:center;padding-top:14px;flex:1;">
+        <div style="width:100%;height:2px;background:#555;"></div>
+      </div>
+
+      <!-- ADMIN col -->
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div style="width:2px;height:20px;background:#555;margin:0 auto;"></div>
+        <div class="box blue" style="min-width:180px;">
+          ADMIN
+          <span class="sub">Assigns Users</span>
+        </div>
+        <!-- double arrow labels for Manager ↔ Admin and Admin ↔ Team Leader -->
+      </div>
+
+      <!-- Center line segment (right of Admin) -->
+      <div style="display:flex;flex-direction:column;align-items:center;padding-top:14px;flex:1;">
+        <div style="width:100%;height:2px;background:#555;"></div>
+      </div>
+
+      <!-- TEAM LEADER + COUNSELOR + CUSTOMER SUPPORT col -->
+      <div style="display:flex;flex-direction:column;align-items:flex-start;flex:1;padding-top:14px;">
+        <div style="width:100%;height:2px;background:#555;"></div>
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <!-- Team Leader + Counselor stack -->
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div style="width:2px;height:20px;background:#555;"></div>
+            <div class="box orange" style="min-width:150px;">
+              TEAM LEADER
+              <span class="sub">Reassigns Leads</span>
+            </div>
+            <div style="width:2px;height:14px;background:#555;"></div>
+            <div style="width:2px;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid #555;"></div>
+            <div style="height:6px;"></div>
+            <div class="box yellow" style="min-width:150px;">
+              COUNSELOR
+              <span class="sub">Handles Leads</span>
+            </div>
+          </div>
+          <!-- Customer Support -->
+          <div style="display:flex;flex-direction:column;align-items:center;margin-top:20px;">
+            <div style="width:30px;height:2px;background:#555;margin-bottom:24px;"></div>
+            <div class="box light-blue" style="min-width:130px;font-size:12px;">
+              CUSTOMER<br/>SUPPORT
+              <span class="sub">Assigns New Leads</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- double-headed arrows legend -->
+    <div style="display:flex;justify-content:center;gap:160px;margin-top:6px;color:#555;font-size:18px;letter-spacing:0;">
+      <span>&#x21C4;</span>
+      <span>&#x21C4;</span>
+    </div>
+
+  </div>
+
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- SECTION 2: LEAD ASSIGNMENT FLOW       -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section-label dashed" style="margin-top:36px;">Lead Assignment Flow</div>
+
+  <div style="display:flex;align-items:flex-start;justify-content:center;gap:0;width:100%;">
+
+    <!-- LEAD ENTRY POINT -->
+    <div class="flow-box-group" style="margin-top:0;">
+      <div class="group-title">Lead Entry Point</div>
+      <div class="channel-icons">
+        <span>💬</span>
+        <span>💙</span>
+        <span>🌐</span>
+      </div>
+      <div style="font-size:11px;color:#555;text-align:center;">WhatsApp /<br/>Facebook / Website</div>
+    </div>
+
+    <!-- Arrow → -->
+    <div class="h-arrow">→</div>
+
+    <!-- ROUTING RULES -->
+    <div style="display:flex;flex-direction:column;align-items:center;margin-top:14px;">
+      <div class="box orange" style="min-width:160px;">
+        ROUTING RULES
+        <span class="sub" style="font-style:italic;">Configured by Admin</span>
+      </div>
+    </div>
+
+    <!-- Arrow → -->
+    <div class="h-arrow">→</div>
+
+    <!-- AI QUALIFICATION GROUP -->
+    <div class="ai-group" style="margin-top:0;">
+      <div class="group-title">AI Qualification</div>
+      <div class="assignment-rows">
+        <div class="box outline-green" style="min-width:150px;font-size:12px;">AUTO Assignment</div>
+        <div style="width:2px;height:14px;background:#555;"></div>
+        <div style="width:2px;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid #555;"></div>
+        <div class="box outline-yellow" style="min-width:150px;font-size:12px;">MANUAL Assignment</div>
+      </div>
+    </div>
+
+    <!-- Double arrows → → from both assignments to Manual Assignment panel -->
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:space-around;height:120px;margin-top:14px;padding:0 10px;gap:24px;">
+      <span style="font-size:18px;color:#555;">→</span>
+      <span style="font-size:18px;color:#555;">→</span>
+    </div>
+
+    <!-- MANUAL ASSIGNMENT GROUP -->
+    <div class="manual-group" style="margin-top:0;">
+      <div class="group-title">Manual Assignment</div>
+      <div class="manual-routes">
+        <div class="manual-route-item">Support → TEAM LEADER</div>
+        <div class="manual-route-item">Support → Counselor</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Downward arrow to Reporting -->
+  <div style="width:2px;height:28px;background:#555;margin:16px auto 0;position:relative;">
+    <div style="position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid #555;"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════ -->
+  <!-- SECTION 3: REPORTING & MONITORING     -->
+  <!-- ══════════════════════════════════════ -->
+  <div class="section-label" style="margin-top:20px;">Reporting &amp; Monitoring</div>
+
+  <div class="reporting-row">
+    <div class="box purple" style="min-width:180px;padding:14px 24px;">MANAGER REPORTS</div>
+    <div class="box dark-red" style="min-width:200px;padding:14px 24px;">TEAM LEADER MONITORS</div>
+    <div class="box steel-blue" style="min-width:200px;padding:14px 24px;">ADMIN CONFIGURATION</div>
+  </div>
+
+  <!-- Footer -->
+  <div style="margin-top:48px;text-align:center;font-size:10px;color:#aaa;letter-spacing:2px;text-transform:uppercase;">
+    POVA CRM  •  Data Flow Document  •  v1.0
+  </div>
+
+</body>
+</html>
