@@ -2,7 +2,7 @@ import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import PageLayout from './components/layout/PageLayout'
-import api from './services/api'
+import api, { socket } from './services/api'
 import Dashboard from './pages/Dashboard'
 import Leads from './pages/Leads'
 import Inbox from './pages/Inbox'
@@ -46,12 +46,33 @@ import LeadAssignment from './pages/support/LeadAssignment'
 import AiStatus from './pages/support/AiStatus'
 import TemplatesLibrary from './pages/TemplatesLibrary'
 import LoginPage from './pages/auth/LoginPage'
+import AnalyticsPage from './pages/AnalyticsPage'
+
+// Admin Pages
+import AdminUsers from './pages/admin/Users'
+
+// Team Member Pages
+import TeamMemberDashboard from './pages/team-member/Dashboard'
+
+// Service User Pages
+import ServiceUserDashboard from './pages/service-user/Dashboard'
 import { useNavigate, useLocation } from 'react-router-dom'
-import apiClient from './lib/apiClient'
+
 import useAppStore, { ROLE_MAP } from './store/useStore'
 import { ToastContainer } from './components/ui/Toast'
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false, // Prevent infinite buffering on 403 or network failures
+      refetchOnWindowFocus: false,
+      staleTime: 30000 // Cache for 30s to prevent constant reloading
+    },
+    mutations: {
+      retry: false
+    }
+  }
+})
 
 const roleHomePages = {
   'Super Admin': '/super-admin',
@@ -63,9 +84,19 @@ const roleHomePages = {
 }
 
 function AppRoutes() {
-  const { isAuthenticated, role } = useAppStore()
+  const { isAuthenticated, role, login } = useAppStore()
+  const navigate = useNavigate()
 
-  if (!isAuthenticated) {
+  useEffect(() => {
+    const userData = localStorage.getItem('user')
+    if (userData && !isAuthenticated) {
+      const parsed = JSON.parse(userData)
+      const displayRole = ROLE_MAP[parsed.role] || parsed.role
+      login(displayRole, parsed)
+    }
+  }, [isAuthenticated, login])
+
+  if (!isAuthenticated && !localStorage.getItem('user')) {
     return (
       <>
         <Routes>
@@ -121,6 +152,9 @@ function AppRoutes() {
         <Route path="/team-leader/sla" element={<SlaAlerts />} />
         <Route path="/team-leader/logs" element={<ActivityLogs />} />
 
+        {/* Team Member Routes */}
+        <Route path="/team-member/dashboard" element={<TeamMemberDashboard />} />
+
         {/* Counselor Routes */}
         <Route path="/counselor" element={<CounselorDashboard />} />
         <Route path="/counselor/notes" element={<LeadNotes />} />
@@ -134,8 +168,11 @@ function AppRoutes() {
         <Route path="/support/ai-status" element={<AiStatus />} />
         <Route path="/support/templates" element={<TemplatesLibrary />} />
 
+        {/* Service User Routes */}
+        <Route path="/service-user/dashboard" element={<ServiceUserDashboard />} />
+
         <Route path="/calls" element={<div className="text-center py-20 text-gray-500">Calls Page (Work in Progress)</div>} />
-        <Route path="/analytics" element={<div className="text-center py-20 text-gray-500">Analytics Page (Work in Progress)</div>} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/settings" element={<div className="text-center py-20 text-gray-500">Settings Page (Work in Progress)</div>} />
       </Routes>
     </PageLayout>
@@ -145,23 +182,48 @@ function AppRoutes() {
 function App() {
   const { login } = useAppStore()
 
-  // Hydrate user from stored token on page refresh / app mount
-  useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) return
 
-    apiClient.get('/auth/me')
-      .then((response) => {
-        if (response.success && response.data) {
-          const frontendRole = ROLE_MAP[response.data.role] || 'Super Admin'
-          login(frontendRole, response.data)
-        }
-      })
-      .catch(() => {
-        // Token expired or invalid → clear it
-        localStorage.removeItem('token')
-      })
-  }, []) // eslint-disable-line
+  // Global Socket Listener for Real-Time UI Updates
+  useEffect(() => {
+    const handleDashboardRefresh = () => {
+      console.log('[Socket] Refreshing dashboard data...');
+      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['super-admin-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['manager-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['team-leader-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['counselor-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['support-dashboard'] });
+    };
+
+    const handleLeadUpdate = () => {
+      console.log('[Socket] Lead mutated - refreshing lists...');
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      queryClient.invalidateQueries({ queryKey: ['support-queue'] });
+      handleDashboardRefresh(); // Stats often change when leads change
+    };
+
+    const handleMessageEvent = () => {
+      console.log('[Socket] New message - refreshing chats...');
+      queryClient.invalidateQueries({ queryKey: ['chats'] });
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+    };
+
+    socket.on('dashboard:refresh', handleDashboardRefresh);
+    socket.on('lead:new', handleLeadUpdate);
+    socket.on('lead:update', handleLeadUpdate);
+    socket.on('lead:delete', handleLeadUpdate);
+    socket.on('message:new', handleMessageEvent);
+    socket.on('new_message', handleMessageEvent);
+
+    return () => {
+      socket.off('dashboard:refresh', handleDashboardRefresh);
+      socket.off('lead:new', handleLeadUpdate);
+      socket.off('lead:update', handleLeadUpdate);
+      socket.off('lead:delete', handleLeadUpdate);
+      socket.off('message:new', handleMessageEvent);
+      socket.off('new_message', handleMessageEvent);
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -174,3 +236,5 @@ function App() {
 }
 
 export default App
+
+

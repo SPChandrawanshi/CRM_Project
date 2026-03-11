@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { FaFileExport, FaFilePdf, FaFileExcel, FaSearch, FaChevronRight, FaArrowLeft, FaFilter, FaPrint } from 'react-icons/fa'
+import { useAdminActions } from '../../hooks/useCrmMutations'
+import { useQuery } from '@tanstack/react-query'
+import api from '../../services/api'
+import { Loader } from 'lucide-react'
 
 const AdminReports = () => {
     const location = useLocation()
     const [activeTab, setActiveTab] = useState('team')
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedReport, setSelectedReport] = useState(null)
+    const { downloadReport } = useAdminActions()
 
     useEffect(() => {
         const params = new URLSearchParams(location.search)
@@ -48,47 +53,18 @@ const AdminReports = () => {
         }
     }
 
-    const getReportData = (reportName) => {
-        const data = []
-        const staffNames = ["John Smith", "Sarah Johnson", "Mike Wilson", "Emma Davis", "David Brown", "Linda White"]
-        const clientNames = ["James Peterson", "Mary Collins", "Robert Taylor", "Patricia Moore", "Elizabeth Hall"]
+    const { data: reportsResp, isLoading: isLoadingReport } = useQuery({
+        queryKey: ['generated-report', activeTab, selectedReport],
+        queryFn: async () => {
+            if (!selectedReport) return { data: [] };
+            const res = await api.get(`/admin/reports/generate?type=${activeTab}&reportName=${encodeURIComponent(selectedReport)}`);
+            return res.data;
+        },
+        enabled: !!selectedReport
+    });
 
-        for (let i = 1; i <= 10; i++) {
-            if (activeTab === 'team') {
-                const staff = staffNames[i % staffNames.length]
-                const client = clientNames[i % clientNames.length]
-                data.push({
-                    c1: `S00${i}`,
-                    c2: staff,
-                    c3: "2024-02-14",
-                    c4: reportName.includes("Mileage") ? `${i * 12.5} miles (Travel to ${client})` : `Visit to ${client}`,
-                    c5: reportName.includes("Hours") ? `${(i % 5) + 4} hrs` : (reportName.includes("DBS") ? "Valid until 2025" : "Active"),
-                    c6: i % 7 === 0 ? "Flagged" : "Completed"
-                })
-            } else if (activeTab === 'service') {
-                const client = clientNames[i % clientNames.length]
-                const staff = staffNames[i % staffNames.length]
-                data.push({
-                    c1: `C00${i}`,
-                    c2: client,
-                    c3: "2024-02-14",
-                    c4: reportName.includes("Medication") ? `Admin by ${staff}` : `Personal Care - ${staff}`,
-                    c5: i % 3 === 0 ? "Local Authority" : "Private Fund",
-                    c6: i % 8 === 0 ? "Missing Note" : "Verified"
-                })
-            } else {
-                data.push({
-                    c1: `LOG-${1000 + i}`,
-                    c2: reportName,
-                    c3: `2024-02-14 0${i % 9}:30`,
-                    c4: i % 4 === 0 ? "System Auto" : "Admin Manager",
-                    c5: `Automated ${reportName} check completed for sector ${i}`,
-                    c6: i % 5 === 0 ? "High" : "Low"
-                })
-            }
-        }
-        return data
-    }
+    const reportDataArray = reportsResp?.data || [];
+
 
     const getActiveReports = () => {
         let reports = []
@@ -110,7 +86,7 @@ const AdminReports = () => {
 
     const handleExportCSV = () => {
         const columns = getReportColumns()
-        const rows = getReportData(selectedReport)
+        const rows = reportDataArray
 
         let csvContent = columns.join(",") + "\n"
         rows.forEach(row => {
@@ -199,26 +175,43 @@ const AdminReports = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 bg-white">
-                                {getReportData(selectedReport).map((row, idx) => (
-                                    <tr key={idx} className="hover:bg-gray-50 transition-all">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{row.c1}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{row.c2}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{row.c3}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{row.c4}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{row.c5}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-                                                {row.c6}
-                                            </span>
+                                {isLoadingReport ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-20 text-center">
+                                            <Loader size={32} className="animate-spin text-cyan-600 mx-auto mb-4" />
+                                            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Querying Global Database Matrix...</p>
                                         </td>
                                     </tr>
-                                ))}
+                                ) : reportDataArray.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-20 text-center text-gray-500">
+                                            No data found for this report configuration in the live dataset.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    reportDataArray.map((row, idx) => (
+                                        <tr key={idx} className="hover:bg-gray-50 transition-all">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{row.c1}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{row.c2}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{row.c3}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{row.c4}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{row.c5}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                                                    {row.c6}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
-                    <div className="p-4 bg-gray-50 border-t border-gray-200 text-center text-sm text-gray-500">
-                        Showing 8 out of 45 results. This is a system generated demonstration report.
-                    </div>
+                    {!isLoadingReport && reportDataArray.length > 0 && (
+                        <div className="p-4 bg-gray-50 border-t border-gray-200 text-center text-sm text-gray-500 font-medium">
+                            Showing {reportDataArray.length} generated results mapped to live MySQL arrays.
+                        </div>
+                    )}
                 </div>
             </div>
         )
@@ -279,14 +272,16 @@ const AdminReports = () => {
                 </div>
                 <div className="flex gap-4">
                     <button
-                        onClick={() => alert("Exporting all report categories as PDF...")}
-                        className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all font-medium"
+                        onClick={() => downloadReport.mutate('pdf_all')}
+                        disabled={downloadReport.isPending}
+                        className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all font-medium disabled:opacity-50"
                     >
                         <FaFilePdf /> Export All as PDF
                     </button>
                     <button
-                        onClick={() => alert("Exporting all report categories as CSV...")}
-                        className="flex items-center gap-2 px-6 py-3 bg-white text-cyan-900 hover:bg-cyan-50 rounded-xl transition-all font-bold"
+                        onClick={() => downloadReport.mutate('csv_all')}
+                        disabled={downloadReport.isPending}
+                        className="flex items-center gap-2 px-6 py-3 bg-white text-cyan-900 hover:bg-cyan-50 rounded-xl transition-all font-bold disabled:opacity-50"
                     >
                         <FaFileExcel /> Export All as CSV
                     </button>
@@ -297,3 +292,6 @@ const AdminReports = () => {
 }
 
 export default AdminReports
+
+
+

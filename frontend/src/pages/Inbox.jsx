@@ -9,20 +9,22 @@ import { cn } from '../lib/utils'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCounselorActions, useChatActions, useSupportActions } from '../hooks/useCrmMutations'
 import useAppStore from '../store/useStore'
-import apiClient, { socket } from '../lib/apiClient'
+import api, { socket } from '../services/api'
+import { toast } from '../components/ui/Toast'
 
 const Inbox = () => {
     const queryClient = useQueryClient()
-    const { updateStage, addNote } = useCounselorActions()
+    const { updateStage, addNote, logCall } = useCounselorActions()
     const { sendMessage, clearUnread } = useChatActions()
     const { assignLead, createLead } = useSupportActions()
-    const { selectedLeadId, setSelectedLeadId, role } = useAppStore()
+    const { selectedLeadId, setSelectedLeadId, role, country, statusFilter, teamMember } = useAppStore()
 
     const [messageInput, setMessageInput] = useState('')
     const [searchTerm, setSearchTerm] = useState('')
     const [newNoteInput, setNewNoteInput] = useState('')
     const [isAddingNote, setIsAddingNote] = useState(false)
     const scrollRef = useRef(null)
+    const socketRef = useRef(null)
 
     // Modals for Support Role
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
@@ -30,10 +32,12 @@ const Inbox = () => {
     const [assignData, setAssignData] = useState({ team: 'Global Operations', counselor: 'Unassigned', priority: 'Medium' })
     const [newLeadData, setNewLeadData] = useState({ name: '', phone: '', email: '', country: '', program: '', source: 'Social', assignTo: 'Auto', priority: 'Medium' })
 
-    // Fetch Chats
+    // Fetch Chats with Global Filters
     const { data: chatsResp = null, isLoading: loadingChats } = useQuery({
-        queryKey: ['chats'],
-        queryFn: () => apiClient.get('/leads')
+        queryKey: ['chats', country, statusFilter, teamMember],
+        queryFn: () => api.get('/leads', {
+            params: { country, status: statusFilter, teamMember }
+        })
     })
     const chats = Array.isArray(chatsResp?.data) ? chatsResp.data : (Array.isArray(chatsResp) ? chatsResp : [])
 
@@ -49,30 +53,35 @@ const Inbox = () => {
 
     const { data: messagesResp = null, isLoading: loadingMessages } = useQuery({
         queryKey: ['messages', selectedChatId],
-        queryFn: () => apiClient.get(`/messages/${selectedChatId}`),
+        queryFn: () => api.get(`/messages/${selectedChatId}`),
         enabled: !!selectedChatId
     })
     const messages = Array.isArray(messagesResp?.data) ? messagesResp.data : (Array.isArray(messagesResp) ? messagesResp : [])
 
-    // Socket.IO for real-time messages
+    // Socket.IO for real-time messages - Optimized to stay connected
     useEffect(() => {
-        socket.connect();
+        if (!socket.connected) {
+            socket.connect();
+        }
         
-        socket.on('new_message', (newMessage) => {
+        const handleNewMessage = (newMessage) => {
             if (newMessage.leadId === selectedChatId) {
                 queryClient.setQueryData(['messages', selectedChatId], (old = []) => [...old, newMessage]);
             }
-        });
+        };
+
+        socket.on('new_message', handleNewMessage);
 
         return () => {
-            socket.disconnect();
+            socket.off('new_message', handleNewMessage);
+            // Don't disconnect here to maintain connection during chat switching
         };
     }, [selectedChatId, queryClient]);
 
     // Fetch Notes for the selected lead
     const { data: notesResp, refetch: refetchNotes } = useQuery({
         queryKey: ['lead-notes', selectedChatId],
-        queryFn: () => apiClient.get(`/counselor/notes/${selectedChatId}`),
+        queryFn: () => api.get(`/counselor/notes/${selectedChatId}`),
         enabled: !!selectedChatId
     })
 
@@ -88,7 +97,7 @@ const Inbox = () => {
         if (!messageInput.trim()) return
         
         try {
-            await apiClient.post('/messages', {
+            await api.post('/messages', {
                 leadId: selectedChatId,
                 message: messageInput,
                 sender: 'me',
@@ -133,6 +142,18 @@ const Inbox = () => {
         })
     }
 
+    const handleInitiateUplink = () => {
+        logCall.mutate({
+            lead: selectedChatId,
+            type: 'Outbound',
+            duration: 0,
+            outcome: 'Connected',
+            notes: 'Automated uplink initiated via Command Interface',
+            date: new Date().toISOString().split('T')[0],
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+        });
+    }
+
     const filteredChats = chats.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.program?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -150,10 +171,13 @@ const Inbox = () => {
     }
 
     return (
-        <div className="h-[calc(100vh-280px)] bg-white flex overflow-hidden border border-slate-200/60 rounded-[2.5rem] shadow-lg">
+        <div className="flex-1 bg-white flex flex-col md:flex-row overflow-hidden border border-slate-200/60 md:rounded-[2.5rem] shadow-lg min-h-0 relative">
             {/* Left Panel: Communication Hub */}
-            <div className="w-[260px] lg:w-[280px] 2xl:w-[320px] border-r border-slate-100 flex flex-col bg-slate-50/20 shrink-0">
-                <div className="p-5 2xl:p-6 border-b border-slate-100 space-y-4 bg-white">
+            <div className={cn(
+                "w-full md:w-[260px] lg:w-[280px] xl:w-[320px] border-b md:border-b-0 md:border-r border-slate-100 flex flex-col bg-slate-50/20 shrink-0",
+                selectedLeadId ? "hidden md:flex" : "flex"
+            )}>
+                <div className="p-4 md:p-5 2xl:p-6 border-b border-slate-100 space-y-4 bg-white">
                     <div className="flex items-center justify-between">
                         <div>
                             <div className="flex items-center gap-2 mb-1">
@@ -250,11 +274,17 @@ const Inbox = () => {
             </div>
 
             {/* Center Panel: Command Interface */}
-            <div className="flex-1 flex flex-col bg-slate-50/10 min-w-[400px] overflow-hidden">
+            <div className={cn(
+                "flex-1 flex flex-col w-full md:w-auto bg-slate-50/10 min-w-0 lg:min-w-[400px] overflow-hidden shrink-0 md:shrink",
+                !selectedLeadId ? "hidden md:flex" : "flex"
+            )}>
                 {selectedChat ? (
                     <>
-                        <div className="h-16 border-b border-slate-100 bg-white px-6 flex items-center justify-between shrink-0 z-10">
+                        <div className="h-16 border-b border-slate-100 bg-white px-4 md:px-6 flex items-center justify-between shrink-0 z-10 w-full sticky top-0 md:static">
                             <div className="flex items-center gap-3">
+                                <button className="md:hidden p-2 -ml-2 text-slate-400" onClick={() => setSelectedLeadId(null)}>
+                                    <X size={20} />
+                                </button>
                                 <div className="h-9 w-9 rounded-xl bg-slate-50 text-slate-400 border border-slate-100 flex items-center justify-center font-black text-sm">
                                     {selectedChat.name.charAt(0)}
                                 </div>
@@ -272,14 +302,24 @@ const Inbox = () => {
                                     <span className="text-[8px] 2xl:text-[9px] font-black text-slate-900 uppercase tracking-widest">{selectedChat.channel}</span>
                                 </div>
                                 <div className="flex items-center gap-2 p-1 bg-slate-50 border border-slate-100 rounded-2xl">
-                                    <button className="h-8 w-8 2xl:h-9 2xl:w-9 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded-xl transition-all"><Phone size={14} /></button>
-                                    <button className="h-8 w-8 2xl:h-9 2xl:w-9 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded-xl transition-all"><Video size={14} /></button>
+                                    <button 
+                                        onClick={() => toast.success(`Starting voice uplink with ${selectedChat.name}...`)}
+                                        className="h-8 w-8 2xl:h-9 2xl:w-9 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded-xl transition-all"
+                                    >
+                                        <Phone size={14} />
+                                    </button>
+                                    <button 
+                                        onClick={() => toast.success(`Establishing secure video protocol with ${selectedChat.name}...`)}
+                                        className="h-8 w-8 2xl:h-9 2xl:w-9 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded-xl transition-all"
+                                    >
+                                        <Video size={14} />
+                                    </button>
                                     <button className="h-8 w-8 2xl:h-9 2xl:w-9 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-white hover:shadow-sm rounded-xl transition-all"><MoreHorizontal size={14} /></button>
                                 </div>
                             </div>
                         </div>
 
-                        <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-6 no-scrollbar scrolling-touch">
+                        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-4 md:space-y-6 no-scrollbar scrolling-touch w-full">
                             {loadingMessages ? (
                                 <div className="h-full flex items-center justify-center opacity-50">
                                     <div className="h-10 w-10 border-4 border-slate-100 border-t-indigo-600 rounded-full animate-spin" />
@@ -303,11 +343,11 @@ const Inbox = () => {
                                                     ? "bg-[#020617] text-white rounded-tr-none shadow-indigo-900/10 ring-1 ring-slate-800"
                                                     : "bg-white text-slate-900 border border-slate-100 rounded-tl-none"
                                             )}>
-                                                {msg.text}
+                                                {msg.message || msg.text}
                                             </div>
                                             <span className="text-[7px] text-slate-400 font-black mt-1 uppercase tracking-[0.2em] flex items-center gap-2">
                                                 {msg.sender === 'me' && <CheckCircle2 size={10} className="text-indigo-500" />}
-                                                {msg.time}
+                                                {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : msg.time}
                                             </span>
                                         </motion.div>
                                     ))}
@@ -315,8 +355,8 @@ const Inbox = () => {
                             )}
                         </div>
 
-                        <div className="p-6 bg-white border-t border-slate-100">
-                            <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-2xl p-2 focus-within:ring-4 focus-within:ring-indigo-500/5 focus-within:border-indigo-200 transition-all shadow-inner">
+                        <div className="p-4 md:p-6 bg-white border-t border-slate-100 sticky bottom-0 z-20 md:static w-full">
+                            <div className="flex items-center gap-2 md:gap-3 bg-slate-50 border border-slate-100 rounded-2xl p-2 w-full focus-within:ring-4 focus-within:ring-indigo-500/5 focus-within:border-indigo-200 transition-all shadow-inner">
                                 <button className="h-9 w-9 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-white rounded-[1.25rem] transition-all"><Paperclip size={16} /></button>
                                 <input
                                     type="text"
@@ -349,8 +389,8 @@ const Inbox = () => {
 
             {/* Right Panel: Intelligence Node */}
             {selectedChat && (
-                <div className="w-[260px] lg:w-[280px] 2xl:w-[320px] border-l border-slate-100 bg-slate-50/10 overflow-y-auto no-scrollbar hidden 2xl:flex flex-col shrink-0">
-                    <div className="p-8 text-center bg-white border-b border-slate-100 shadow-sm shrink-0">
+                <div className="w-full md:w-[260px] lg:w-[280px] xl:w-[320px] md:border-l border-slate-100 bg-slate-50/10 overflow-y-auto no-scrollbar hidden xl:flex flex-col shrink-0">
+                    <div className="p-6 md:p-8 text-center bg-white border-b border-slate-100 shadow-sm shrink-0">
                         <div className="relative inline-block mb-4">
                             <div className="h-20 w-20 rounded-[1.75rem] bg-slate-50 text-indigo-600 flex items-center justify-center font-black text-2xl mx-auto border border-slate-100 shadow-xl shadow-indigo-500/5 relative overflow-hidden group">
                                 {selectedChat.name.charAt(0)}
@@ -381,7 +421,7 @@ const Inbox = () => {
                         )}
                     </div>
 
-                    <div className="p-8 space-y-10 flex-1 bg-white xl:bg-transparent">
+                    <div className="p-6 md:p-8 space-y-8 md:space-y-10 flex-1 bg-white xl:bg-transparent">
                         {role === 'Customer Support' ? (
                             <section>
                                 <div className="flex items-center gap-3 mb-6">
@@ -505,7 +545,7 @@ const Inbox = () => {
                         )}
                     </div>
 
-                    <div className="mt-auto p-8 border-t border-slate-100 bg-white">
+                    <div className="mt-auto p-6 md:p-8 border-t border-slate-100 bg-white">
                         {role === 'Customer Support' ? (
                             <div className="flex flex-col gap-4">
                                 <button
@@ -524,10 +564,14 @@ const Inbox = () => {
                                 </button>
                             </div>
                         ) : (
-                            <button className="h-16 bg-[#020617] text-white rounded-2xl flex items-center justify-center gap-4 text-[11px] font-black hover:bg-black transition-all shadow-2xl shadow-slate-900/40 active:scale-95 uppercase tracking-[0.2em] ring-1 ring-slate-800">
-                                <Phone size={18} /> 
-                                <span>Initiate Uplink</span>
-                            </button>
+                                <button 
+                                    onClick={handleInitiateUplink}
+                                    disabled={logCall.isPending}
+                                    className="h-16 bg-[#020617] text-white rounded-2xl flex items-center justify-center gap-4 text-[11px] font-black hover:bg-black transition-all shadow-2xl shadow-slate-900/40 active:scale-95 uppercase tracking-[0.2em] ring-1 ring-slate-800 disabled:opacity-50"
+                                >
+                                    <Phone size={18} className={logCall.isPending ? "animate-spin" : ""} /> 
+                                    <span>{logCall.isPending ? 'Uplinking...' : 'Initiate Uplink'}</span>
+                                </button>
                         )}
                     </div>
                 </div>
@@ -543,7 +587,7 @@ const Inbox = () => {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }} 
                             animate={{ opacity: 1, scale: 1, y: 0 }} 
                             exit={{ opacity: 0, scale: 0.9, y: 20 }} 
-                            className="relative w-full max-w-sm bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100"
+                            className="relative w-full max-w-sm bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100 mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar"
                         >
                             <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                                 <div>
@@ -588,7 +632,7 @@ const Inbox = () => {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }} 
                             animate={{ opacity: 1, scale: 1, y: 0 }} 
                             exit={{ opacity: 0, scale: 0.9, y: 20 }} 
-                            className="relative w-full max-w-lg bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100"
+                            className="relative w-full max-w-lg bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-slate-100 mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar"
                         >
                             <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                                 <div>
@@ -600,7 +644,7 @@ const Inbox = () => {
                                 </div>
                                 <button onClick={() => setIsCreateLeadModalOpen(false)} className="h-12 w-12 flex items-center justify-center text-slate-400 hover:text-rose-500 rounded-2xl bg-white border border-slate-200 active:scale-90 transition-all"><X size={22} /></button>
                             </div>
-                            <div className="p-10 grid grid-cols-2 gap-8">
+                            <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="col-span-2 sm:col-span-1">
                                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Identity Qualifier</label>
                                     <input type="text" value={newLeadData.name} onChange={(e) => setNewLeadData({ ...newLeadData, name: e.target.value })} className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black text-slate-900 shadow-inner focus:outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-200 transition-all" placeholder="Enter Full Name" />
@@ -632,3 +676,5 @@ const Inbox = () => {
 }
 
 export default Inbox
+
+

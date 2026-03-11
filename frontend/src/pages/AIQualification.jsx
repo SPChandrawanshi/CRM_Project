@@ -12,7 +12,7 @@ import {
 import { motion } from 'framer-motion'
 import { cn } from '../lib/utils'
 import { useQuery } from '@tanstack/react-query'
-import apiClient from '../lib/apiClient'
+import api from '../services/api'
 
 const QuestionItem = ({ question, index }) => (
     <div className="crm-card !p-4 flex gap-4 items-start group">
@@ -20,11 +20,11 @@ const QuestionItem = ({ question, index }) => (
             <GripVertical size={20} />
         </div>
         <div className="flex-1 space-y-3">
-            <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-[#3B5BDB] uppercase tracking-wider">Step {index + 1}</span>
-                <div className="flex items-center gap-2">
-                    <button className="p-1.5 text-[#6B7280] hover:text-[#EF4444] rounded hover:bg-rose-50 transition-colors"><Trash2 size={16} /></button>
-                    <button className="p-1.5 text-[#6B7280] hover:text-[#3B5BDB] rounded hover:bg-indigo-50 transition-colors"><Settings2 size={16} /></button>
+            <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] font-bold text-[#3B5BDB] uppercase tracking-wider shrink-0">Step {index + 1}</span>
+                <div className="flex items-center gap-1 md:gap-2 shrink-0">
+                    <button className="p-1 md:p-1.5 text-[#6B7280] hover:text-[#EF4444] rounded hover:bg-rose-50 transition-colors"><Trash2 size={14} md:size={16} /></button>
+                    <button className="p-1 md:p-1.5 text-[#6B7280] hover:text-[#3B5BDB] rounded hover:bg-indigo-50 transition-colors"><Settings2 size={14} md:size={16} /></button>
                 </div>
             </div>
             <input
@@ -32,9 +32,9 @@ const QuestionItem = ({ question, index }) => (
                 defaultValue={question}
                 className="w-full font-medium text-[#111827] bg-transparent border-none focus:ring-0 p-0"
             />
-            <div className="flex gap-2">
-                <span className="text-[10px] px-2 py-1 bg-gray-100 rounded text-[#111827] font-medium border border-gray-200">Text Input</span>
-                <span className="text-[10px] px-2 py-1 bg-indigo-50 text-[#3B5BDB] rounded font-medium border border-indigo-100">Extracts: Program</span>
+            <div className="flex flex-wrap gap-2">
+                <span className="text-[9px] md:text-[10px] px-2 py-1 bg-gray-100 rounded text-[#111827] font-medium border border-gray-200 whitespace-nowrap">Text Input</span>
+                <span className="text-[9px] md:text-[10px] px-2 py-1 bg-indigo-50 text-[#3B5BDB] rounded font-medium border border-indigo-100 whitespace-nowrap">Extracts: Program</span>
             </div>
         </div>
     </div>
@@ -44,7 +44,7 @@ const AIQualification = () => {
     const { data: configResp, isLoading } = useQuery({
         queryKey: ['ai-config'],
         queryFn: async () => {
-            const res = await apiClient.get('/dashboard/ai-config');
+            const res = await api.get('/dashboard/ai-config');
             return res.data || res;
         }
     })
@@ -62,19 +62,19 @@ const AIQualification = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-[#111827]">AI Qualification Builder</h1>
-                    <p className="text-[#6B7280]">Design the chat flow and extraction rules for automatic lead qualification.</p>
+                    <h1 className="text-2xl md:text-3xl font-black text-[#111827] uppercase tracking-tight">AI Qualification Builder</h1>
+                    <p className="text-[10px] md:text-xs font-medium text-[#6B7280] mt-1 uppercase tracking-widest">Design the chat flow and extraction rules for automatic lead qualification.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 bg-white border border-[#E5E7EB] text-[#111827] px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors shadow-sm text-sm">
-                        <Save className="h-4 w-4" />
-                        <span>Save Flow</span>
+                <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto">
+                    <button className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-white border border-[#E5E7EB] text-[#111827] px-4 py-2.5 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-gray-50 transition-colors shadow-sm">
+                        <Save size={14} className="shrink-0" />
+                        <span>Save</span>
                     </button>
-                    <button className="flex items-center gap-2 bg-[#3B5BDB] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#2B4BDB] transition-colors shadow-sm text-sm">
-                        <Plus className="h-4 w-4" />
-                        <span>Add Question</span>
+                    <button className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-[#111827] text-white px-4 py-2.5 rounded-xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-black transition-colors shadow-xl shadow-indigo-100">
+                        <Plus size={14} className="shrink-0" />
+                        <span>Question</span>
                     </button>
                 </div>
             </div>
@@ -119,23 +119,23 @@ const AIQualification = () => {
                         </div>
                     </div>
 
-                    <div className="bg-[#111827] p-6 rounded-xl text-white shadow-lg relative overflow-hidden">
+                    <div className="bg-[#111827] p-6 rounded-3xl text-white shadow-2xl relative overflow-hidden border border-gray-800">
                         <div className="relative z-10">
-                            <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-                                <UserCheck size={18} className="text-[#10B981]" />
+                            <h3 className="text-[10px] md:text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <UserCheck size={16} className="text-[#10B981]" />
                                 Extraction Preview
                             </h3>
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                                 {['Name', 'Email', 'Program', 'Qualification', 'Timeline'].map((field) => (
-                                    <div key={field} className="flex justify-between items-center text-xs border-b border-[#1F2937] py-2">
+                                    <div key={field} className="flex justify-between items-center text-[10px] md:text-xs font-bold uppercase tracking-widest border-b border-[#1F2937] pb-2">
                                         <span className="text-gray-400">{field}</span>
-                                        <span className="text-gray-200">Pending</span>
+                                        <span className="text-indigo-400">Pending</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                        <div className="absolute -bottom-6 -right-6 opacity-10">
-                            <BrainCircuit size={120} />
+                        <div className="absolute -bottom-6 -right-6 opacity-5 pointer-events-none text-indigo-500">
+                            <BrainCircuit size={160} />
                         </div>
                     </div>
                 </div>
@@ -145,3 +145,5 @@ const AIQualification = () => {
 }
 
 export default AIQualification
+
+

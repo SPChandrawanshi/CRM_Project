@@ -14,8 +14,8 @@ const KPICard = ({ title, value, icon: Icon, color, index }) => (
                 <Icon className="h-5 w-5" />
             </div>
             <div className="mt-auto">
-                <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">{title}</p>
-                <h3 className="text-2xl font-bold text-gray-900 mt-1">{value}</h3>
+                <p className="text-[10px] md:text-sm font-medium text-gray-500 uppercase tracking-wider">{title}</p>
+                <h3 className="text-xl md:text-2xl font-bold text-gray-900 mt-1">{value}</h3>
             </div>
         </div>
         <div className="absolute top-0 right-0 p-4 text-[#0a3d62] opacity-5 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none">
@@ -50,7 +50,7 @@ const Dashboard = () => {
                 </button>
             </motion.div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 crm-grid">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
                 {kpis.map((kpi, index) => (
                     <KPICard key={index} {...kpi} index={index} />
                 ))}
@@ -87,3 +87,5 @@ const Dashboard = () => {
 }
 
 export default Dashboard
+
+

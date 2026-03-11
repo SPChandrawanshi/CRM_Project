@@ -112,7 +112,7 @@ const TeamMemberDashboard = () => {
             {/* Quick Actions */}
             <div className="mt-6 crm-card">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">Quick Actions</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-4 gap-4">
                     <button
                         onClick={() => navigate('/team-member/daily-rota')}
                         className="p-4 bg-gradient-to-br from-teal-500 to-cyan-600 text-white rounded-xl hover:shadow-lg transition-all"
@@ -148,3 +148,5 @@ const TeamMemberDashboard = () => {
 }
 
 export default TeamMemberDashboard
+
+

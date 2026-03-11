@@ -185,7 +185,7 @@ const AbsencesHoliday = () => {
             {/* Request Leave Modal */}
             {showRequestModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Request Leave</h2>
                             <button onClick={() => setShowRequestModal(false)} className="text-white hover:text-gray-200">
@@ -204,7 +204,7 @@ const AbsencesHoliday = () => {
                                         <option>Personal Leave</option>
                                     </select>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
                                         <input
@@ -262,7 +262,7 @@ const AbsencesHoliday = () => {
             {/* View Request Modal */}
             {showViewModal && selectedRequest && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Leave Request Details</h2>
                             <button onClick={() => setShowViewModal(false)} className="text-white hover:text-gray-200">
@@ -275,7 +275,7 @@ const AbsencesHoliday = () => {
                                     <p className="text-sm text-gray-600 mb-1">Request ID</p>
                                     <p className="text-lg font-semibold text-gray-800">{selectedRequest.id}</p>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-sm text-gray-600 mb-1">Start Date</p>
                                         <p className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -331,3 +331,5 @@ const AbsencesHoliday = () => {
 }
 
 export default AbsencesHoliday
+
+

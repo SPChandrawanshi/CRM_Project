@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { FaPlus, FaEdit, FaTrash, FaEye, FaFileInvoice, FaTimes, FaMoneyBillWave, FaShieldAlt, FaCalendarAlt, FaCog } from 'react-icons/fa'
+import { useAdminActions } from '../../hooks/useCrmMutations'
 
 const AdminInvoicing = () => {
     const location = useLocation()
     const [activeTab, setActiveTab] = useState('invoicing')
+    const { executeAction } = useAdminActions()
 
     useEffect(() => {
         const params = new URLSearchParams(location.search)
@@ -294,7 +296,7 @@ const AdminInvoicing = () => {
                                             <h3 className="font-semibold text-gray-800">{tariff.service}</h3>
                                             <p className="text-sm font-medium text-cyan-600">{tariff.rate}</p>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mb-3">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-600 mb-3">
                                             <div className="bg-gray-50 p-2 rounded">Holiday: {tariff.holiday}</div>
                                             <div className="bg-gray-50 p-2 rounded">Weekend: {tariff.weekend}</div>
                                         </div>
@@ -542,7 +544,7 @@ const AdminInvoicing = () => {
                             </div>
                             <div className="flex gap-3 mt-8">
                                 <button onClick={() => setShowAddModal(false)} className="flex-1 px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium">Cancel</button>
-                                <button onClick={() => { alert('Saved successfully!'); setShowAddModal(false); }} className="flex-1 px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all font-bold">Save Changes</button>
+                                <button onClick={() => { executeAction.mutate('save_changes'); setShowAddModal(false); }} disabled={executeAction.isPending} className="flex-1 px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all font-bold disabled:opacity-50">Save Changes</button>
                             </div>
                         </div>
                     </div>
@@ -552,7 +554,7 @@ const AdminInvoicing = () => {
             {/* View Modal */}
             {showViewModal && selectedItem && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200 mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-cyan-600 to-teal-600 p-6 text-white text-center relative">
                             <button onClick={() => setShowViewModal(false)} className="absolute right-4 top-4 text-white/80 hover:text-white"><FaTimes /></button>
                             <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -596,7 +598,7 @@ const AdminInvoicing = () => {
                             </div>
                             <div className="flex gap-3 mt-8">
                                 <button onClick={() => setShowEditModal(false)} className="flex-1 px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all">Cancel</button>
-                                <button onClick={() => { alert('Updated successfully!'); setShowEditModal(false); }} className="flex-1 px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all font-bold">Update Item</button>
+                                <button onClick={() => { executeAction.mutate('update_item'); setShowEditModal(false); }} disabled={executeAction.isPending} className="flex-1 px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all font-bold disabled:opacity-50">Update Item</button>
                             </div>
                         </div>
                     </div>
@@ -606,7 +608,7 @@ const AdminInvoicing = () => {
             {/* Delete Confirmation */}
             {showDeleteModal && selectedItem && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-300 mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="w-20 h-20 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
                             <FaTrash className="text-4xl" />
                         </div>
@@ -617,7 +619,7 @@ const AdminInvoicing = () => {
                         </p>
                         <div className="flex gap-4">
                             <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-3 border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all">No, Cancel</button>
-                            <button onClick={() => { alert('Deleted!'); setShowDeleteModal(false); }} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-200">Yes, Delete</button>
+                            <button onClick={() => { executeAction.mutate('delete_item'); setShowDeleteModal(false); }} disabled={executeAction.isPending} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-200 disabled:opacity-50">Yes, Delete</button>
                         </div>
                     </div>
                 </div>
@@ -627,3 +629,5 @@ const AdminInvoicing = () => {
 }
 
 export default AdminInvoicing
+
+

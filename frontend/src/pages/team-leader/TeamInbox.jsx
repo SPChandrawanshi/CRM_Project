@@ -31,11 +31,15 @@ const TeamInbox = () => {
     )
 
     const conversations = inbox?.data || []
-    const filteredConvs = conversations.filter(c =>
-        c.leadName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.counselor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.country.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    const filteredConvs = conversations.filter(c => {
+        const ln = c.leadName || '';
+        const clr = c.counselor || '';
+        const ctry = c.country || '';
+
+        return ln.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               clr.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               ctry.toLowerCase().includes(searchQuery.toLowerCase());
+    })
 
     return (
         <div className="space-y-8 pb-12">
@@ -201,7 +205,7 @@ const TeamInbox = () => {
                                     </button>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3 bg-gray-50/50 p-3 rounded-2xl border border-gray-100/50">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-gray-50/50 p-3 rounded-2xl border border-gray-100/50">
                                     <div>
                                         <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Lead Identity</p>
                                         <p className="text-[11px] font-black text-[#111827] uppercase mt-0.5">{selectedConv.leadName}</p>
@@ -285,3 +289,5 @@ const TeamInbox = () => {
 }
 
 export default TeamInbox
+
+

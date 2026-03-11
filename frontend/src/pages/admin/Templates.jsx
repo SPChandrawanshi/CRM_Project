@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { FaFileAlt, FaPlus, FaEdit, FaTrash, FaEye, FaTimes, FaClock, FaTasks, FaUser } from 'react-icons/fa'
+import { useQuery } from '@tanstack/react-query'
+import api from '../../services/api'
+import { useCareTemplateActions } from '../../hooks/useCrmMutations'
+import { toast } from '../../components/ui/Toast'
 
 const AdminTemplates = () => {
     const location = useLocation()
@@ -19,28 +23,14 @@ const AdminTemplates = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [selectedTemplate, setSelectedTemplate] = useState(null)
 
-    const templates = [
-        {
-            id: 'T001',
-            name: 'Morning Care Routine',
-            type: 'Daily',
-            tasks: 5,
-            duration: '2 hours',
-            createdBy: 'Admin User',
-            description: 'Standard morning care routine including personal hygiene, breakfast assistance, and medication',
-            taskList: ['Personal Care', 'Breakfast Preparation', 'Medication Administration', 'Mobility Support', 'Documentation']
-        },
-        {
-            id: 'T002',
-            name: 'Medication Administration',
-            type: 'Weekly',
-            tasks: 3,
-            duration: '1 hour',
-            createdBy: 'Admin User',
-            description: 'Weekly medication review and administration protocol',
-            taskList: ['Medication Check', 'Administration', 'Documentation']
-        },
-    ]
+    const { data: templatesRes, isLoading } = useQuery({
+        queryKey: ['care-templates'],
+        queryFn: () => api.get('/care-templates').then(res => res.data)
+    })
+    const templates = templatesRes?.data || []
+
+    const { addTemplate, updateTemplate, deleteTemplate } = useCareTemplateActions()
+    const [formData, setFormData] = useState({ name: '', type: 'Daily', tasks: '', duration: '', description: '', taskList: '' })
 
     const tabs = [
         { id: 'daily', label: 'Daily Templates' },
@@ -50,11 +40,13 @@ const AdminTemplates = () => {
 
     const handleAddTemplate = () => {
         setSelectedTemplate(null)
+        setFormData({ name: '', type: 'Daily', tasks: '', duration: '', description: '', taskList: '' })
         setShowAddModal(true)
     }
 
     const handleEditTemplate = (template) => {
         setSelectedTemplate(template)
+        setFormData({ ...template, taskList: template.taskList?.join('\n') || '' })
         setShowEditModal(true)
     }
 
@@ -112,7 +104,9 @@ const AdminTemplates = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                                {(activeTab === 'run-routes' ? [
+                                {isLoading ? (
+                                    <tr><td colSpan="6" className="text-center py-4">Loading templates...</td></tr>
+                                ) : (activeTab === 'run-routes' ? [
                                     { id: 'R001', name: 'North Sector Route 1', type: 'Residential', tasks: 12, duration: '4 hours', createdBy: 'Feb 12, 2024' },
                                     { id: 'R002', name: 'Central Care Run', type: 'Urban', tasks: 8, duration: '3 hours', createdBy: 'Feb 14, 2024' }
                                 ] : templates).map((item) => (
@@ -178,13 +172,15 @@ const AdminTemplates = () => {
                         </div>
                         <div className="p-6">
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             <FaFileAlt className="inline mr-2" />Template Name *
                                         </label>
                                         <input
                                             type="text"
+                                            value={formData.name}
+                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             placeholder="Enter template name"
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
                                         />
@@ -193,12 +189,16 @@ const AdminTemplates = () => {
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             Template Type *
                                         </label>
-                                        <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none">
-                                            <option>Select type</option>
-                                            <option>Daily</option>
-                                            <option>Weekly</option>
-                                            <option>Monthly</option>
-                                            <option>Custom</option>
+                                        <select
+                                            value={formData.type}
+                                            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+                                        >
+                                            <option value="">Select type</option>
+                                            <option value="Daily">Daily</option>
+                                            <option value="Weekly">Weekly</option>
+                                            <option value="Monthly">Monthly</option>
+                                            <option value="Custom">Custom</option>
                                         </select>
                                     </div>
                                     <div>
@@ -207,6 +207,8 @@ const AdminTemplates = () => {
                                         </label>
                                         <input
                                             type="number"
+                                            value={formData.tasks}
+                                            onChange={(e) => setFormData({ ...formData, tasks: e.target.value })}
                                             placeholder="Enter number of tasks"
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
                                         />
@@ -217,6 +219,8 @@ const AdminTemplates = () => {
                                         </label>
                                         <input
                                             type="text"
+                                            value={formData.duration}
+                                            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                                             placeholder="e.g., 2 hours"
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
                                         />
@@ -226,6 +230,8 @@ const AdminTemplates = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                                     <textarea
                                         rows="3"
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         placeholder="Enter template description"
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
                                     ></textarea>
@@ -234,6 +240,8 @@ const AdminTemplates = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Task List</label>
                                     <textarea
                                         rows="4"
+                                        value={formData.taskList}
+                                        onChange={(e) => setFormData({ ...formData, taskList: e.target.value })}
                                         placeholder="Enter tasks (one per line)"
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
                                     ></textarea>
@@ -253,12 +261,14 @@ const AdminTemplates = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        alert('Template created successfully!')
-                                        setShowAddModal(false)
+                                        addTemplate.mutate(formData, {
+                                            onSuccess: () => setShowAddModal(false)
+                                        })
                                     }}
-                                    className="flex-1 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg"
+                                    disabled={addTemplate.isPending}
+                                    className="flex-1 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg disabled:opacity-50"
                                 >
-                                    Create Template
+                                    {addTemplate.isPending ? 'Creating...' : 'Create Template'}
                                 </button>
                             </div>
                         </div>
@@ -278,14 +288,15 @@ const AdminTemplates = () => {
                         </div>
                         <div className="p-6">
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             <FaFileAlt className="inline mr-2" />Template Name *
                                         </label>
                                         <input
                                             type="text"
-                                            defaultValue={selectedTemplate.name}
+                                            value={formData.name || ''}
+                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
                                         />
                                     </div>
@@ -294,13 +305,14 @@ const AdminTemplates = () => {
                                             Template Type *
                                         </label>
                                         <select
-                                            defaultValue={selectedTemplate.type}
+                                            value={formData.type || ''}
+                                            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
                                         >
-                                            <option>Daily</option>
-                                            <option>Weekly</option>
-                                            <option>Monthly</option>
-                                            <option>Custom</option>
+                                            <option value="Daily">Daily</option>
+                                            <option value="Weekly">Weekly</option>
+                                            <option value="Monthly">Monthly</option>
+                                            <option value="Custom">Custom</option>
                                         </select>
                                     </div>
                                     <div>
@@ -309,7 +321,8 @@ const AdminTemplates = () => {
                                         </label>
                                         <input
                                             type="number"
-                                            defaultValue={selectedTemplate.tasks}
+                                            value={formData.tasks || ''}
+                                            onChange={(e) => setFormData({ ...formData, tasks: e.target.value })}
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
                                         />
                                     </div>
@@ -319,7 +332,8 @@ const AdminTemplates = () => {
                                         </label>
                                         <input
                                             type="text"
-                                            defaultValue={selectedTemplate.duration}
+                                            value={formData.duration || ''}
+                                            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
                                         />
                                     </div>
@@ -328,7 +342,8 @@ const AdminTemplates = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                                     <textarea
                                         rows="3"
-                                        defaultValue={selectedTemplate.description}
+                                        value={formData.description || ''}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
                                     ></textarea>
                                 </div>
@@ -336,7 +351,8 @@ const AdminTemplates = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Task List</label>
                                     <textarea
                                         rows="4"
-                                        defaultValue={selectedTemplate.taskList?.join('\n')}
+                                        value={formData.taskList || ''}
+                                        onChange={(e) => setFormData({ ...formData, taskList: e.target.value })}
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
                                     ></textarea>
                                 </div>
@@ -350,12 +366,14 @@ const AdminTemplates = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        alert('Template updated successfully!')
-                                        setShowEditModal(false)
+                                        updateTemplate.mutate({ id: formData.id, ...formData }, {
+                                            onSuccess: () => setShowEditModal(false)
+                                        })
                                     }}
-                                    className="flex-1 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg"
+                                    disabled={updateTemplate.isPending}
+                                    className="flex-1 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg disabled:opacity-50"
                                 >
-                                    Save Changes
+                                    {updateTemplate.isPending ? 'Saving...' : 'Save Changes'}
                                 </button>
                             </div>
                         </div>
@@ -375,7 +393,7 @@ const AdminTemplates = () => {
                         </div>
                         <div className="p-6">
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="bg-gray-50 p-4 rounded-lg">
                                         <p className="text-sm text-gray-600 mb-1">Template ID</p>
                                         <p className="text-lg font-semibold text-gray-800">{selectedTemplate.id}</p>
@@ -435,7 +453,7 @@ const AdminTemplates = () => {
             {/* Delete Confirmation Modal */}
             {showDeleteModal && selectedTemplate && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Confirm Delete</h2>
                             <button onClick={() => setShowDeleteModal(false)} className="text-white hover:text-gray-200">
@@ -458,12 +476,14 @@ const AdminTemplates = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        alert('Template deleted successfully!')
-                                        setShowDeleteModal(false)
+                                        deleteTemplate.mutate(selectedTemplate.id, {
+                                            onSuccess: () => setShowDeleteModal(false)
+                                        })
                                     }}
-                                    className="flex-1 px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:shadow-lg"
+                                    disabled={deleteTemplate.isPending}
+                                    className="flex-1 px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:shadow-lg disabled:opacity-50"
                                 >
-                                    Delete Template
+                                    {deleteTemplate.isPending ? 'Deleting...' : 'Delete Template'}
                                 </button>
                             </div>
                         </div>
@@ -475,3 +495,6 @@ const AdminTemplates = () => {
 }
 
 export default AdminTemplates
+
+
+

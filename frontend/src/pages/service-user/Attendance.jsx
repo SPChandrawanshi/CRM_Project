@@ -159,7 +159,7 @@ const ServiceUserAttendance = () => {
                                     {visit.status}
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
                                 <div>
                                     <p className="text-[8px] text-gray-400 uppercase font-bold">Checked In</p>
                                     <p className="text-sm font-bold text-gray-700">{visit.checkin}</p>
@@ -189,3 +189,5 @@ const ServiceUserAttendance = () => {
 }
 
 export default ServiceUserAttendance
+
+

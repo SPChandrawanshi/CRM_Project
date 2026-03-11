@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { FaLock, FaEnvelope, FaUserShield, FaUsers, FaUserInjured } from 'react-icons/fa'
-import apiClient from '../../lib/apiClient'
+import api from '../../services/api'
 
 const Login = () => {
   const [email, setEmail] = useState('')
@@ -16,20 +16,29 @@ const Login = () => {
     setLoading(true)
 
     try {
-      const response = await apiClient.post('/auth/login', { email, password });
+      const response = await api.post('/auth/login', { email, password });
       
       if (response.success) {
         // Store user info and token in localStorage
+        // Store the raw backend role (e.g. SUPER_ADMIN) so ROLE_MAP works correctly
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify({ 
           email: response.data.email, 
-          role: response.data.role.toLowerCase().replace('_', '-'), 
+          role: response.data.role,   // Keep original backend enum e.g. SUPER_ADMIN
           name: response.data.name 
         }));
 
-        // Redirect to role-specific dashboard
-        const role = response.data.role.toLowerCase().replace('_', '-');
-        navigate(`/${role}/dashboard`);
+        // Redirect to role-specific dashboard based on backend role
+        const roleRedirectMap = {
+          'SUPER_ADMIN': '/super-admin',
+          'ADMIN': '/admin',
+          'MANAGER': '/manager',
+          'TEAM_LEADER': '/team-leader',
+          'COUNSELOR': '/counselor',
+          'SUPPORT': '/support',
+        };
+        const redirectPath = roleRedirectMap[response.data.role] || '/dashboard';
+        navigate(redirectPath);
       } else {
         setError(response.message || 'Invalid email or password');
       }
@@ -44,7 +53,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-teal-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(8,145,178,0.15)] p-8 w-full max-w-md border border-cyan-100">
+      <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(8,145,178,0.15)] p-8 w-full max-w-md border border-cyan-100 mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-cyan-500 to-teal-600 rounded-2xl mb-4 shadow-lg">
             <FaUserShield className="text-white text-2xl" />
@@ -136,14 +145,14 @@ const Login = () => {
               <FaUsers className="text-teal-600" />
               <div>
                 <strong className="text-teal-700">Admin:</strong>
-                <span className="text-gray-600 ml-1">admin@crm.com / password123</span>
+                <span className="text-gray-600 ml-1">admin@edu-corp.com / password123</span>
               </div>
             </div>
             <div className="flex items-center gap-2 text-xs bg-white p-2 rounded border border-blue-100">
               <FaUserInjured className="text-blue-600" />
               <div>
                 <strong className="text-blue-700">Counselor:</strong>
-                <span className="text-gray-600 ml-1">counselor@crm.com / password123</span>
+                <span className="text-gray-600 ml-1">counselor@sales.crm / password123</span>
               </div>
             </div>
           </div>
@@ -154,4 +163,7 @@ const Login = () => {
 }
 
 export default Login
+
+
+
 

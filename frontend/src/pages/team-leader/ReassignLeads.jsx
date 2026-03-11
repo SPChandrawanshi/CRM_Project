@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useQuery } from '@tanstack/react-query'
-import apiClient from '../../lib/apiClient'
+import api from '../../services/api'
 import { useTeamLeaderActions } from '../../hooks/useTeamLeaderActions'
 
 const ReassignLeads = () => {
@@ -25,15 +25,18 @@ const ReassignLeads = () => {
     const [bulkCounselor, setBulkCounselor] = useState('')
 
     // Fetch real counselors
-    const { data: counselorsResp } = useQuery({
+    const { data: usersResp } = useQuery({
         queryKey: ['counselors-list'],
-        queryFn: async () => {
-            const res = await apiClient.get('/users');
-            const users = Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []);
-            return users.filter(u => u.role === 'COUNSELOR');
-        }
+        queryFn: () => api.get('/users')
     })
-    const COUNSELORS = (counselorsResp || []).map(c => c.name)
+    // usersResp = { success, data: [...users] } from apiClient
+    const usersArray = Array.isArray(usersResp?.data) ? usersResp.data : (Array.isArray(usersResp) ? usersResp : [])
+    const filteredCounselors = usersArray.filter(u => {
+        // role may be an object {id, name, description} from backend — extract string safely
+        const roleName = typeof u.role === 'object' ? (u.role?.name || '') : (u.role || '')
+        return roleName.toUpperCase() === 'COUNSELOR' && u.status === 'Active'
+    })
+    const COUNSELORS = filteredCounselors.map(c => c.name)
 
     if (isLoading) return (
         <div className="h-96 flex items-center justify-center">
@@ -49,6 +52,7 @@ const ReassignLeads = () => {
     )
 
     const handleSelectAll = () => {
+        if (filteredList.length === 0) return;
         if (selectedLeads.length === filteredList.length) {
             setSelectedLeads([])
         } else {
@@ -57,11 +61,11 @@ const ReassignLeads = () => {
     }
 
     const handleSelectLead = (id) => {
-        if (selectedLeads.includes(id)) {
-            setSelectedLeads(selectedLeads.filter(lId => lId !== id))
-        } else {
-            setSelectedLeads([...selectedLeads, id])
-        }
+        setSelectedLeads(prev => 
+            prev.includes(id) 
+                ? prev.filter(lId => lId !== id) 
+                : [...prev, id]
+        )
     }
 
     const handleSingleReassign = (leadId, newCounselor) => {
@@ -165,7 +169,7 @@ const ReassignLeads = () => {
                             <tr className="bg-[#F9FAFB]/50">
                                 <th className="px-6 py-5 w-12 text-center">
                                     <button onClick={handleSelectAll} className="text-gray-400 hover:text-indigo-600 transition-colors">
-                                        {selectedLeads.length > 0 && selectedLeads.length === filteredList.length ? (
+                                        {filteredList.length > 0 && selectedLeads.length === filteredList.length ? (
                                             <CheckSquare size={18} className="text-indigo-600" />
                                         ) : (
                                             <Square size={18} />
@@ -187,8 +191,11 @@ const ReassignLeads = () => {
                                         "transition-all group",
                                         isSelected ? "bg-indigo-50/30" : "hover:bg-gray-50/50"
                                     )}>
-                                        <td className="px-6 py-6 text-center">
-                                            <button onClick={() => handleSelectLead(lead.id)} className="text-gray-400 hover:text-indigo-600 transition-colors">
+                                        <td className="px-6 py-6 text-center" onClick={(e) => e.stopPropagation()}>
+                                            <button 
+                                                onClick={() => handleSelectLead(lead.id)} 
+                                                className="text-gray-400 hover:text-indigo-600 transition-colors p-2 -m-2"
+                                            >
                                                 {isSelected ? (
                                                     <CheckSquare size={18} className="text-indigo-600" />
                                                 ) : (
@@ -253,3 +260,6 @@ const ReassignLeads = () => {
 }
 
 export default ReassignLeads
+
+
+

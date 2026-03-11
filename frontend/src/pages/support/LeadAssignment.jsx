@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../../lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { useSupportActions } from '../../hooks/useCrmMutations'
-import apiClient from '../../lib/apiClient'
+import api from '../../services/api'
 
 const LeadAssignment = () => {
     const { assignLead } = useSupportActions()
@@ -14,15 +14,18 @@ const LeadAssignment = () => {
 
     const { data: usersResp } = useQuery({
         queryKey: ['counselors-list'],
-        queryFn: () => apiClient.get('/users')
+        queryFn: () => api.get('/users')
     })
     // usersResp = { success, data: [...users] } from apiClient
     const usersArray = Array.isArray(usersResp?.data) ? usersResp.data : (Array.isArray(usersResp) ? usersResp : [])
-    const counselors = usersArray.filter(u => u.role === 'COUNSELOR' || u.role === 'Counselor')
+    const counselors = usersArray.filter(u => {
+        const roleName = typeof u.role === 'object' ? (u.role?.name || '') : (u.role || '')
+        return roleName.toUpperCase() === 'COUNSELOR'
+    })
 
     const { data: resp, isLoading } = useQuery({
         queryKey: ['support-assignments'],
-        queryFn: () => apiClient.get('/support/assignment-list')
+        queryFn: () => api.get('/support/assignment-list')
     })
 
     const leads = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : [])
@@ -57,17 +60,17 @@ const LeadAssignment = () => {
     }
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto px-4 py-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-black text-[#111827] uppercase tracking-tight">Manual Assignment Panel</h1>
+        <div className="space-y-6 max-w-7xl w-full min-w-0 mx-auto px-4 sm:px-0 py-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 flex-wrap">
+                <div className="min-w-0">
+                    <h1 className="text-2xl font-black text-[#111827] uppercase tracking-tight flex-wrap">Manual Assignment Panel</h1>
                     <p className="text-sm font-medium text-[#6B7280] mt-1">Override routing rules and manually dispatch high-value leads.</p>
                 </div>
             </div>
 
-            <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-sm flex flex-col overflow-hidden">
-                <div className="px-6 py-5 border-b border-[#E5E7EB] flex items-center justify-between gap-4 bg-gray-50/30">
-                    <div className="relative flex-1 max-w-md">
+            <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-sm flex flex-col overflow-hidden w-full min-w-0">
+                <div className="px-4 sm:px-6 py-5 border-b border-[#E5E7EB] flex items-center justify-between gap-4 bg-gray-50/30 flex-wrap">
+                    <div className="relative flex-1 w-full sm:max-w-md">
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
                             type="text"
@@ -79,7 +82,7 @@ const LeadAssignment = () => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto no-scrollbar min-h-[400px]">
+                <div className="overflow-x-auto no-scrollbar min-h-[400px] w-full max-w-full">
                     <table className="w-full text-left border-collapse min-w-[900px]">
                         <thead>
                             <tr className="bg-[#F9FAFB]">
@@ -117,11 +120,12 @@ const LeadAssignment = () => {
                                         <td className="px-4 py-5">
                                             <span className={cn(
                                                 "text-[9px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg border",
-                                                lead.status === 'Hot' ? "bg-rose-50 text-rose-600 border-rose-100" :
-                                                    lead.status === 'Warm' ? "bg-amber-50 text-amber-600 border-amber-100" :
-                                                        "bg-slate-50 text-slate-600 border-slate-200"
+                                                lead.stage === 'Qualified' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                                                lead.stage === 'New' ? "bg-blue-50 text-blue-600 border-blue-100" :
+                                                lead.stage === 'Pending' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                                                "bg-slate-50 text-slate-600 border-slate-200"
                                             )}>
-                                                {lead.status}
+                                                {lead.stage || 'Unknown'}
                                             </span>
                                         </td>
                                         <td className="px-4 py-5">
@@ -272,3 +276,6 @@ const LeadAssignment = () => {
 }
 
 export default LeadAssignment
+
+
+

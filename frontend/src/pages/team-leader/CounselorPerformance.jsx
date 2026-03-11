@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Target,
@@ -17,6 +18,7 @@ import { cn } from '../../lib/utils'
 import { useTeamLeaderActions } from '../../hooks/useTeamLeaderActions'
 
 const CounselorPerformance = () => {
+    const navigate = useNavigate()
     const { usePerformance, refreshData } = useTeamLeaderActions()
     const { data: performance, isLoading } = usePerformance()
 
@@ -30,9 +32,10 @@ const CounselorPerformance = () => {
     )
 
     const leaderboard = performance?.data || []
-    const filteredLeaderboard = leaderboard.filter(c =>
-        c.counselor.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    const filteredLeaderboard = leaderboard.filter(c => {
+        const counselorName = c.counselor || '';
+        return counselorName.toLowerCase().includes(searchQuery.toLowerCase());
+    })
 
     return (
         <div className="space-y-8 pb-12">
@@ -197,7 +200,7 @@ const CounselorPerformance = () => {
                                 {/* SLA Performance Widget */}
                                 <div className="space-y-3">
                                     <h4 className="text-[10px] font-black text-[#111827] uppercase tracking-widest">SLA Compliance Overview</h4>
-                                    <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 grid grid-cols-2 gap-4 shadow-sm">
+                                    <div className="bg-white border border-[#E5E7EB] rounded-2xl p-5 grid grid-cols-1 md:grid-cols-2 gap-4 shadow-sm">
                                         <div className="space-y-1">
                                             <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Avg Response</p>
                                             <p className={cn(
@@ -240,7 +243,10 @@ const CounselorPerformance = () => {
                                             </div>
                                         ))}
                                     </div>
-                                    <button className="w-full py-3 text-[9px] font-black text-gray-400 hover:text-indigo-600 uppercase tracking-widest transition-colors flex items-center justify-center gap-1">
+                                    <button 
+                                        onClick={() => navigate('/team-leader/leads')}
+                                        className="w-full py-3 text-[9px] font-black text-gray-400 hover:text-indigo-600 uppercase tracking-widest transition-colors flex items-center justify-center gap-1"
+                                    >
                                         View All {selectedCounselor.totalLeads} Leads <ChevronRight size={10} />
                                     </button>
                                 </div>
@@ -254,3 +260,5 @@ const CounselorPerformance = () => {
 }
 
 export default CounselorPerformance
+
+

@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { FaPlus, FaCalendarDay, FaPrint, FaTools, FaEye, FaEdit, FaTrash, FaTimes } from 'react-icons/fa'
+import { useQuery } from '@tanstack/react-query'
+import api from '../../services/api'
+import { useRotaActions } from '../../hooks/useCrmMutations'
 
 const AdminRota = () => {
     const location = useLocation()
@@ -19,45 +22,14 @@ const AdminRota = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [selectedRota, setSelectedRota] = useState(null)
 
-    // Mock data
-    const [rotaData, setRotaData] = useState([
-        {
-            id: 'R001',
-            date: '2024-02-13',
-            teamMember: 'John Smith',
-            serviceUser: 'Client A',
-            shiftTime: '09:00 - 17:00',
-            shiftStart: '09:00',
-            shiftEnd: '17:00',
-            location: '123 Main St',
-            notes: 'Regular morning shift',
-            status: 'Scheduled'
-        },
-        {
-            id: 'R002',
-            date: '2024-02-13',
-            teamMember: 'Sarah Johnson',
-            serviceUser: 'Client B',
-            shiftTime: '10:00 - 14:00',
-            shiftStart: '10:00',
-            shiftEnd: '14:00',
-            location: '456 Oak Ave',
-            notes: 'Afternoon care',
-            status: 'Completed'
-        },
-        {
-            id: 'R003',
-            date: '2024-02-13',
-            teamMember: 'Mike Wilson',
-            serviceUser: 'Client C',
-            shiftTime: '14:00 - 18:00',
-            shiftStart: '14:00',
-            shiftEnd: '18:00',
-            location: '789 Pine Rd',
-            notes: 'Evening shift',
-            status: 'Missed'
-        },
-    ])
+    const { data: rotaRes, isLoading } = useQuery({
+        queryKey: ['rota'],
+        queryFn: () => api.get('/rota').then(res => res.data)
+    })
+    const rotaData = rotaRes?.data || []
+
+    const { addRota, updateRota, deleteRota } = useRotaActions()
+    const [formData, setFormData] = useState({ date: '', teamMember: '', serviceUser: '', shiftStart: '', shiftEnd: '', location: '', notes: '', status: 'Scheduled' })
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -88,21 +60,30 @@ const AdminRota = () => {
     }
 
     const confirmDelete = () => {
-        setRotaData(rotaData.filter(r => r.id !== selectedRota.id))
-        setShowDeleteModal(false)
-        setSelectedRota(null)
+        deleteRota.mutate(selectedRota.id, {
+            onSuccess: () => {
+                setShowDeleteModal(false)
+                setSelectedRota(null)
+            }
+        })
     }
 
     const handleSaveRota = () => {
-        alert('Rota saved successfully!')
-        setShowAddModal(false)
-        setActiveTab('daily')
+        addRota.mutate(formData, {
+            onSuccess: () => {
+                setShowAddModal(false)
+                setActiveTab('daily')
+            }
+        })
     }
 
     const handleUpdateRota = () => {
-        alert('Rota updated successfully!')
-        setShowEditModal(false)
-        setSelectedRota(null)
+        updateRota.mutate({ id: selectedRota.id, ...formData }, {
+            onSuccess: () => {
+                setShowEditModal(false)
+                setSelectedRota(null)
+            }
+        })
     }
 
     const tabs = [
@@ -204,7 +185,10 @@ const AdminRota = () => {
                                 <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
                                     <input type="date" className="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
                                     <button
-                                        onClick={() => setShowAddModal(true)}
+                                        onClick={() => {
+                                            setFormData({ date: '', teamMember: '', serviceUser: '', shiftStart: '', shiftEnd: '', location: '', notes: '', status: 'Scheduled' })
+                                            setShowAddModal(true)
+                                        }}
                                         className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all"
                                     >
                                         <FaPlus /> Add Rota
@@ -228,7 +212,9 @@ const AdminRota = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
-                                        {rotaData.map((rota) => (
+                                        {isLoading ? (
+                                            <tr><td colSpan="8" className="text-center py-4">Loading...</td></tr>
+                                        ) : rotaData.map((rota) => (
                                             <tr key={rota.id} className="hover:bg-gray-50">
                                                 <td className="px-4 py-3 text-sm text-gray-800 font-medium">{rota.id}</td>
                                                 <td className="px-4 py-3 text-sm text-gray-600">{rota.date}</td>
@@ -251,7 +237,11 @@ const AdminRota = () => {
                                                             <FaEye />
                                                         </button>
                                                         <button
-                                                            onClick={() => handleEdit(rota)}
+                                                            onClick={() => {
+                                                                setSelectedRota(rota)
+                                                                setFormData({ ...rota })
+                                                                setShowEditModal(true)
+                                                            }}
                                                             className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                                                             title="Edit"
                                                         >
@@ -422,44 +412,34 @@ const AdminRota = () => {
                             </button>
                         </div>
                         <div className="p-6">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
-                                    <input type="date" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
+                                    <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Team Member *</label>
-                                    <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none">
-                                        <option>Select Team Member</option>
-                                        <option>John Smith</option>
-                                        <option>Sarah Johnson</option>
-                                        <option>Mike Wilson</option>
-                                    </select>
+                                    <input type="text" placeholder="Enter Staff Name" value={formData.teamMember} onChange={(e) => setFormData({...formData, teamMember: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Service User *</label>
-                                    <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none">
-                                        <option>Select Service User</option>
-                                        <option>Client A</option>
-                                        <option>Client B</option>
-                                        <option>Client C</option>
-                                    </select>
+                                    <input type="text" placeholder="Enter Client Name" value={formData.serviceUser} onChange={(e) => setFormData({...formData, serviceUser: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Shift Start Time *</label>
-                                    <input type="time" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
+                                    <input type="time" value={formData.shiftStart} onChange={(e) => setFormData({...formData, shiftStart: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Shift End Time *</label>
-                                    <input type="time" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
+                                    <input type="time" value={formData.shiftEnd} onChange={(e) => setFormData({...formData, shiftEnd: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Visit Address *</label>
-                                    <input type="text" placeholder="Enter address" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
+                                    <input type="text" placeholder="Enter address" value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                                    <textarea rows="3" placeholder="Additional notes..." className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none"></textarea>
+                                    <textarea rows="3" placeholder="Additional notes..." value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none"></textarea>
                                 </div>
                             </div>
                             <div className="flex gap-3 mt-6">
@@ -471,9 +451,10 @@ const AdminRota = () => {
                                 </button>
                                 <button
                                     onClick={handleSaveRota}
-                                    className="flex-1 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all"
+                                    disabled={addRota.isPending}
+                                    className="flex-1 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
                                 >
-                                    Save Rota
+                                    {addRota.isPending ? 'Saving...' : 'Save Rota'}
                                 </button>
                             </div>
                         </div>
@@ -484,7 +465,7 @@ const AdminRota = () => {
             {/* View Modal */}
             {showViewModal && selectedRota && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-cyan-500 to-teal-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Rota Details</h2>
                             <button onClick={() => setShowViewModal(false)} className="text-white hover:text-gray-200">
@@ -492,7 +473,7 @@ const AdminRota = () => {
                             </button>
                         </div>
                         <div className="p-6">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-sm text-gray-600 mb-1">Rota ID</p>
                                     <p className="text-lg font-semibold text-gray-800">{selectedRota.id}</p>
@@ -552,50 +533,42 @@ const AdminRota = () => {
                             </button>
                         </div>
                         <div className="p-6">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
-                                    <input type="date" defaultValue={selectedRota.date} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
+                                    <input type="date" value={formData.date || ''} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Team Member *</label>
-                                    <select defaultValue={selectedRota.teamMember} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none">
-                                        <option>John Smith</option>
-                                        <option>Sarah Johnson</option>
-                                        <option>Mike Wilson</option>
-                                    </select>
+                                    <input type="text" value={formData.teamMember || ''} onChange={(e) => setFormData({...formData, teamMember: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Service User *</label>
-                                    <select defaultValue={selectedRota.serviceUser} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none">
-                                        <option>Client A</option>
-                                        <option>Client B</option>
-                                        <option>Client C</option>
-                                    </select>
+                                    <input type="text" value={formData.serviceUser || ''} onChange={(e) => setFormData({...formData, serviceUser: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Shift Start Time *</label>
-                                    <input type="time" defaultValue={selectedRota.shiftStart} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
+                                    <input type="time" value={formData.shiftStart || ''} onChange={(e) => setFormData({...formData, shiftStart: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Shift End Time *</label>
-                                    <input type="time" defaultValue={selectedRota.shiftEnd} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
+                                    <input type="time" value={formData.shiftEnd || ''} onChange={(e) => setFormData({...formData, shiftEnd: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Visit Address *</label>
-                                    <input type="text" defaultValue={selectedRota.location} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
+                                    <input type="text" value={formData.location || ''} onChange={(e) => setFormData({...formData, location: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                                    <select defaultValue={selectedRota.status} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none">
-                                        <option>Scheduled</option>
-                                        <option>Completed</option>
-                                        <option>Missed</option>
+                                    <select value={formData.status || ''} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none">
+                                        <option value="Scheduled">Scheduled</option>
+                                        <option value="Completed">Completed</option>
+                                        <option value="Missed">Missed</option>
                                     </select>
                                 </div>
                                 <div className="col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                                    <textarea rows="3" defaultValue={selectedRota.notes} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none"></textarea>
+                                    <textarea rows="3" value={formData.notes || ''} onChange={(e) => setFormData({...formData, notes: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none"></textarea>
                                 </div>
                             </div>
                             <div className="flex gap-3 mt-6">
@@ -607,9 +580,10 @@ const AdminRota = () => {
                                 </button>
                                 <button
                                     onClick={handleUpdateRota}
-                                    className="flex-1 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all"
+                                    disabled={updateRota.isPending}
+                                    className="flex-1 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
                                 >
-                                    Update Rota
+                                    {updateRota.isPending ? 'Updating...' : 'Update Rota'}
                                 </button>
                             </div>
                         </div>
@@ -620,7 +594,7 @@ const AdminRota = () => {
             {/* Delete Confirmation Modal */}
             {showDeleteModal && selectedRota && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="p-6">
                             <div className="text-center mb-4">
                                 <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
@@ -643,9 +617,10 @@ const AdminRota = () => {
                                 </button>
                                 <button
                                     onClick={confirmDelete}
-                                    className="flex-1 px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all"
+                                    disabled={deleteRota.isPending}
+                                    className="flex-1 px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all disabled:opacity-50"
                                 >
-                                    Delete
+                                    {deleteRota.isPending ? 'Deleting...' : 'Delete'}
                                 </button>
                             </div>
                         </div>
@@ -657,3 +632,6 @@ const AdminRota = () => {
 }
 
 export default AdminRota
+
+
+

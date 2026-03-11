@@ -1,21 +1,29 @@
 import React, { useState } from 'react'
-import { FileEdit, Search, Filter, Calendar, Trash2, Edit2, Loader, RefreshCcw, UserCircle2 } from 'lucide-react'
+import { FileEdit, Search, Filter, Calendar, Trash2, Edit2, Loader, RefreshCcw, UserCircle2, MessageSquare } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../../lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { useCounselorActions } from '../../hooks/useCrmMutations'
-import apiClient from '../../lib/apiClient'
+import api from '../../services/api'
+import useAppStore from '../../store/useStore'
+import { useNavigate } from 'react-router-dom'
 
 const LeadNotes = () => {
-    const { updateNote, deleteNote } = useCounselorActions()
+    const navigate = useNavigate()
+    const { country, statusFilter } = useAppStore()
+    const { updateNote, deleteNote, addNote } = useCounselorActions()
     const [searchTerm, setSearchTerm] = useState('')
     const [editingNote, setEditingNote] = useState(null)
+    const [isAddingNote, setIsAddingNote] = useState(false)
     const [noteText, setNoteText] = useState('')
+    const [newNoteLead, setNewNoteLead] = useState('')
 
     const { data: notesResp, isLoading, refetch } = useQuery({
-        queryKey: ['counselor-notes'],
+        queryKey: ['counselor-notes', country, statusFilter],
         queryFn: async () => {
-            const res = await apiClient.get('/counselor/notes');
+            const res = await api.get('/counselor/notes', {
+                params: { country, status: statusFilter }
+            });
             return res.data || res;
         }
     })
@@ -48,6 +56,22 @@ const LeadNotes = () => {
         });
     }
 
+    const handleAddNote = () => {
+        if (!noteText.trim() || !newNoteLead.trim()) return;
+        addNote.mutate({ 
+            leadId: newNoteLead, 
+            text: noteText,
+            country: country !== 'Global' ? country : undefined,
+            stage: statusFilter !== 'All Stages' ? statusFilter : undefined
+        }, {
+            onSuccess: () => {
+                setIsAddingNote(false);
+                setNoteText('');
+                setNewNoteLead('');
+            }
+        });
+    }
+
     return (
         <div className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -56,10 +80,16 @@ const LeadNotes = () => {
                     <p className="text-sm font-medium text-[#6B7280] mt-1">Review operational, qualitative intel collected during lead engagements.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="bg-white border text-gray-600 border-gray-200 px-5 py-2.5 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-gray-50 hover:text-indigo-600 transition-all shadow-sm flex items-center gap-2">
+                    <button 
+                        onClick={() => document.getElementById('search-notes-input').focus()}
+                        className="bg-white border text-gray-600 border-gray-200 px-5 py-2.5 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-gray-50 hover:text-indigo-600 transition-all shadow-sm flex items-center gap-2"
+                    >
                         <Filter size={14} /> Filter Notes
                     </button>
-                    <button className="bg-[#111827] text-white px-5 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-indigo-100 flex items-center gap-2">
+                    <button 
+                        onClick={() => setIsAddingNote(true)}
+                        className="bg-[#111827] text-white px-5 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-indigo-100 flex items-center gap-2"
+                    >
                         <FileEdit size={14} /> Global Note Entry
                     </button>
                 </div>
@@ -78,6 +108,7 @@ const LeadNotes = () => {
                         <div className="relative flex-1 sm:w-80">
                             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                             <input
+                                id="search-notes-input"
                                 type="text"
                                 placeholder="Search by lead name or note keywords..."
                                 value={searchTerm}
@@ -131,6 +162,13 @@ const LeadNotes = () => {
                                                     <button onClick={() => handleEditNote(note)} className="p-1.5 text-gray-400 hover:text-indigo-600 bg-gray-50 hover:bg-indigo-50 rounded-md transition-colors">
                                                         <Edit2 size={14} />
                                                     </button>
+                                                    <button 
+                                                        onClick={() => navigate('/inbox')}
+                                                        className="p-1.5 text-gray-400 hover:text-emerald-600 bg-gray-50 hover:bg-emerald-50 rounded-md transition-colors"
+                                                        title="View Chat"
+                                                    >
+                                                        <MessageSquare size={14} />
+                                                    </button>
                                                     <button onClick={() => deleteNote.mutate(note.id)} className="p-1.5 text-gray-400 hover:text-rose-600 bg-gray-50 hover:bg-rose-50 rounded-md transition-colors">
                                                         <Trash2 size={14} />
                                                     </button>
@@ -162,42 +200,105 @@ const LeadNotes = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
-                            onClick={() => setEditingNote(null)}
-                        />
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+                            onClick={(e) => {
+                                if (e.target === e.currentTarget) setEditingNote(null);
+                            }}
+                        >
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]"
+                            >
+                                <div className="p-6 border-b border-gray-100 bg-gray-50/50 shrink-0">
+                                    <h2 className="text-lg font-black text-[#111827] uppercase tracking-tight">Modify Note</h2>
+                                </div>
+                                <div className="p-6 overflow-y-auto custom-scrollbar">
+                                    <textarea
+                                        className="w-full h-32 p-4 border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all shadow-sm text-sm"
+                                        value={noteText}
+                                        onChange={(e) => setNoteText(e.target.value)}
+                                    />
+                                    <div className="flex gap-3 justify-end mt-6">
+                                        <button
+                                            onClick={() => setEditingNote(null)}
+                                            className="px-5 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-widest hover:bg-gray-100 rounded-xl transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleSaveNote}
+                                            disabled={updateNote.isPending || !noteText.trim()}
+                                            className="px-5 py-2.5 bg-indigo-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50 flex items-center gap-2"
+                                        >
+                                            {updateNote.isPending ? <RefreshCcw size={14} className="animate-spin" /> : 'Update Note'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    </>
+                )}
+
+                {/* Add Note Modal */}
+                {isAddingNote && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) setIsAddingNote(false);
+                        }}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-3xl shadow-2xl z-50 overflow-hidden border border-gray-100"
+                            className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]"
                         >
-                            <div className="p-6 border-b border-gray-100 bg-gray-50/50">
-                                <h2 className="text-lg font-black text-[#111827] uppercase tracking-tight">Modify Note</h2>
+                            <div className="p-6 border-b border-gray-100 bg-gray-50/50 shrink-0">
+                                <h2 className="text-lg font-black text-[#111827] uppercase tracking-tight">Global Note Entry</h2>
                             </div>
-                            <div className="p-6">
-                                <textarea
-                                    className="w-full h-32 p-4 border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all shadow-sm text-sm"
-                                    value={noteText}
-                                    onChange={(e) => setNoteText(e.target.value)}
-                                />
+                            <div className="p-6 overflow-y-auto custom-scrollbar space-y-4">
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Target Lead</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Enter lead name (e.g. Alice)"
+                                        value={newNoteLead}
+                                        onChange={(e) => setNewNoteLead(e.target.value)}
+                                        className="w-full p-3 border border-gray-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Note Context</label>
+                                    <textarea
+                                        className="w-full h-32 p-4 border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all shadow-sm text-sm"
+                                        placeholder="Add intelligence or operations log..."
+                                        value={noteText}
+                                        onChange={(e) => setNoteText(e.target.value)}
+                                    />
+                                </div>
                                 <div className="flex gap-3 justify-end mt-6">
                                     <button
-                                        onClick={() => setEditingNote(null)}
+                                        onClick={() => setIsAddingNote(false)}
                                         className="px-5 py-2.5 text-xs font-bold text-gray-500 uppercase tracking-widest hover:bg-gray-100 rounded-xl transition-colors"
                                     >
                                         Cancel
                                     </button>
                                     <button
-                                        onClick={handleSaveNote}
-                                        disabled={updateNote.isPending || !noteText.trim()}
-                                        className="px-5 py-2.5 bg-indigo-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50 flex items-center gap-2"
+                                        onClick={handleAddNote}
+                                        disabled={addNote.isPending || !noteText.trim() || !newNoteLead.trim()}
+                                        className="px-5 py-2.5 bg-[#111827] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition-all shadow-xl shadow-indigo-100 disabled:opacity-50 flex items-center gap-2"
                                     >
-                                        {updateNote.isPending ? <RefreshCcw size={14} className="animate-spin" /> : 'Update Note'}
+                                        {addNote.isPending ? <RefreshCcw size={14} className="animate-spin" /> : 'Commit Entry'}
                                     </button>
                                 </div>
                             </div>
                         </motion.div>
-                    </>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </div>
@@ -205,3 +306,6 @@ const LeadNotes = () => {
 }
 
 export default LeadNotes
+
+
+

@@ -1,14 +1,23 @@
 // Admin Dashboard - Main Overview
 import { FaCalendarAlt, FaUsers, FaUserInjured, FaClipboardCheck, FaMoneyBillWave, FaChartLine } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import api from '../../services/api'
 
 const AdminDashboard = () => {
     const navigate = useNavigate()
 
+    const { data: dashRes, isLoading } = useQuery({
+        queryKey: ['adminDashboard'],
+        queryFn: () => api.get('/dashboard/admin').then(res => res.data)
+    })
+    
+    const dbStats = dashRes?.data || {}
+
     const stats = [
         {
             title: 'Total Rotas',
-            value: '156',
+            value: dbStats.totalRotas || '0',
             icon: FaCalendarAlt,
             color: 'from-blue-500 to-cyan-600',
             bgColor: 'bg-blue-50',
@@ -16,7 +25,7 @@ const AdminDashboard = () => {
         },
         {
             title: 'Team Members',
-            value: '24',
+            value: dbStats.teamMembers || '0',
             icon: FaUsers,
             color: 'from-teal-500 to-green-600',
             bgColor: 'bg-teal-50',
@@ -24,7 +33,7 @@ const AdminDashboard = () => {
         },
         {
             title: 'Service Users',
-            value: '48',
+            value: dbStats.serviceUsers || '0',
             icon: FaUserInjured,
             color: 'from-purple-500 to-pink-600',
             bgColor: 'bg-purple-50',
@@ -32,7 +41,7 @@ const AdminDashboard = () => {
         },
         {
             title: 'Completed Visits',
-            value: '342',
+            value: dbStats.completedVisits || '0',
             icon: FaClipboardCheck,
             color: 'from-green-500 to-emerald-600',
             bgColor: 'bg-green-50',
@@ -40,7 +49,7 @@ const AdminDashboard = () => {
         },
         {
             title: 'Pending Invoices',
-            value: '12',
+            value: dbStats.pendingInvoices || '0',
             icon: FaMoneyBillWave,
             color: 'from-yellow-500 to-orange-600',
             bgColor: 'bg-yellow-50',
@@ -48,7 +57,7 @@ const AdminDashboard = () => {
         },
         {
             title: 'Monthly Revenue',
-            value: '£45,280',
+            value: `£${(dbStats.monthlyRevenue || 0).toLocaleString()}`,
             icon: FaChartLine,
             color: 'from-cyan-500 to-blue-600',
             bgColor: 'bg-cyan-50',
@@ -63,18 +72,8 @@ const AdminDashboard = () => {
         { label: 'Invoicing', path: '/admin/invoicing', icon: FaMoneyBillWave, color: 'from-yellow-500 to-orange-600' },
     ]
 
-    const recentActivities = [
-        { action: 'New rota created', user: 'Admin User', time: '5 mins ago', type: 'success' },
-        { action: 'Staff member added', user: 'John Smith', time: '15 mins ago', type: 'info' },
-        { action: 'Invoice generated', user: 'Finance Team', time: '1 hour ago', type: 'warning' },
-        { action: 'Report exported', user: 'Admin User', time: '2 hours ago', type: 'success' },
-    ]
-
-    const upcomingShifts = [
-        { staff: 'John Smith', client: 'Client A', time: '09:00 - 17:00', date: 'Today' },
-        { staff: 'Sarah Johnson', client: 'Client B', time: '10:00 - 14:00', date: 'Today' },
-        { staff: 'Mike Wilson', client: 'Client C', time: '14:00 - 18:00', date: 'Tomorrow' },
-    ]
+    const recentActivities = dbStats.recentActivities || []
+    const upcomingShifts = dbStats.upcomingShifts || []
 
     return (
         <div className="p-4 md:p-6">
@@ -126,7 +125,9 @@ const AdminDashboard = () => {
                 <div className="crm-card">
                     <h2 className="text-xl font-bold text-gray-800 mb-4">Recent Activities</h2>
                     <div className="space-y-4">
-                        {recentActivities.map((activity, index) => (
+                        {recentActivities.length === 0 ? (
+                            <p className="text-gray-500 mt-4">No recent activities found.</p>
+                        ) : recentActivities.map((activity, index) => (
                             <div key={index} className="flex items-start gap-3 pb-4 border-b border-gray-100 last:border-0">
                                 <div className={`w-2 h-2 rounded-full mt-2 ${activity.type === 'success' ? 'bg-green-500' :
                                     activity.type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
@@ -144,7 +145,9 @@ const AdminDashboard = () => {
                 <div className="crm-card">
                     <h2 className="text-xl font-bold text-gray-800 mb-4">Upcoming Shifts</h2>
                     <div className="space-y-4">
-                        {upcomingShifts.map((shift, index) => (
+                        {upcomingShifts.length === 0 ? (
+                            <p className="text-gray-500 mt-4">No upcoming shifts scheduled.</p>
+                        ) : upcomingShifts.map((shift, index) => (
                             <div key={index} className="p-4 bg-gray-50 rounded-lg">
                                 <div className="flex justify-between items-start mb-2">
                                     <div>
@@ -172,3 +175,6 @@ const AdminDashboard = () => {
 }
 
 export default AdminDashboard
+
+
+

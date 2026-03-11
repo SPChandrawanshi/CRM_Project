@@ -4,11 +4,11 @@
 
 @layer base {
   :root {
-    --primary: #0f172a;
+    --primary: #0a3d62;
     --primary-foreground: #ffffff;
     --secondary: #f1f5f9;
-    --secondary-foreground: #0f172a;
-    --accent: #3b82f6;
+    --secondary-foreground: #0a3d62;
+    --accent: #0a3d62;
     --accent-foreground: #ffffff;
     --background: #f8fafc;
     --foreground: #0f172a;
@@ -16,11 +16,11 @@
     --card-foreground: #0f172a;
     --border: #e2e8f0;
     --input: #e2e8f0;
-    --ring: #3b82f6;
+    --ring: #0a3d62;
     --radius: 0.75rem;
   }
 
-  /* Global Shadow Enforcer - Overrides all Tailwind shadow utilities project-wide */
+  /* Global Shadow Enforcer - Enterprise depth */
   .shadow-sm,
   .shadow,
   .shadow-md,
@@ -38,23 +38,23 @@
 
   /* Global Card Style */
   .crm-card {
-    @apply rounded-[2.5rem] bg-white p-8 transition-all duration-500 border border-slate-100/50;
+    @apply rounded-xl bg-white p-5 transition-all duration-300 border border-slate-100/50 break-words overflow-hidden;
     box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
   }
 
   .crm-card:hover {
-    @apply -translate-y-1 cursor-pointer border-indigo-500;
-    box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+    @apply -translate-y-[2px] cursor-pointer;
+    border: 1px solid #0a3d62;
   }
 
   /* Standardized Container */
   .crm-container {
-    @apply max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8;
+    @apply max-w-7xl mx-auto px-4 md:px-6 lg:px-8;
   }
 
   /* Spacing Utilities */
   .crm-section {
-    @apply mb-8;
+    @apply mb-6;
   }
 
   .crm-grid {
@@ -63,21 +63,22 @@
 
   /* Enhanced Button Base */
   .btn-primary {
-    @apply h-10 px-6 rounded-xl flex items-center justify-center transition-all duration-200 font-bold text-sm tracking-tight shadow-md shadow-indigo-500/10 active:scale-95 text-white bg-[#0f172a] hover:bg-black;
+    @apply h-9 px-6 rounded-xl flex items-center justify-center transition-all duration-200 font-bold text-sm tracking-tight text-white bg-[#0a3d62] hover:opacity-90 active:scale-95;
+    box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
   }
 
   .btn-secondary {
-    @apply h-10 px-6 rounded-xl flex items-center justify-center transition-all duration-200 font-bold text-sm tracking-tight border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 active:scale-95;
+    @apply h-9 px-6 rounded-xl flex items-center justify-center transition-all duration-200 font-bold text-sm tracking-tight border border-slate-200 bg-white text-[#0a3d62] hover:bg-slate-50 hover:border-[#0a3d62] active:scale-95;
   }
 
   /* Enhanced Table */
   .crm-table-container {
-    @apply overflow-x-auto rounded-2xl bg-white border border-slate-200/60;
+    @apply overflow-x-auto w-full rounded-xl bg-white border border-slate-200/60;
     box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
   }
 
   .crm-table {
-    @apply w-full text-left border-collapse;
+    @apply w-full text-left border-collapse min-w-[900px];
   }
 
   .crm-table thead {
@@ -90,12 +91,13 @@
   }
 
   .crm-table tr {
-    @apply transition-colors duration-200;
+    @apply transition-all duration-250;
     border-bottom: 1px solid #f1f5f9;
   }
 
   .crm-table tr:hover {
-    @apply bg-slate-50/50;
+    @apply bg-gray-50;
+    border-left: 3px solid #0a3d62;
   }
 
   .crm-table td {
@@ -107,44 +109,14 @@
     @apply px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border;
   }
 
-  .badge-success {
-    @apply bg-emerald-50 text-emerald-600 border-emerald-100;
+  /* Global Hover Border Enforcer */
+  .crm-hover-effect {
+    @apply transition-all duration-300;
   }
 
-  .badge-warning {
-    @apply bg-amber-50 text-amber-600 border-amber-100;
-  }
-
-  .badge-error {
-    @apply bg-rose-50 text-rose-600 border-rose-100;
-  }
-
-  .badge-info {
-    @apply bg-blue-50 text-blue-600 border-blue-100;
-  }
-
-  /* Global Hover Border Enforcer - Targets common UI containers */
-  .crm-table-container,
-  .bg-white.rounded-xl,
-  .bg-white.rounded-2xl,
-  .bg-white.rounded-3xl,
-  .bg-white.rounded-\[2rem\],
-  .bg-white.rounded-\[2\.5rem\],
-  .bg-white.rounded-\[3rem\] {
-    border: 1px solid #f1f5f9;
-    /* Slate 100 base */
-    transition: border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  }
-
-  .crm-table-container:hover,
-  .bg-white.rounded-xl:hover,
-  .bg-white.rounded-2xl:hover,
-  .bg-white.rounded-3xl:hover,
-  .bg-white.rounded-\[2rem\],
-  .bg-white.rounded-\[2\.5rem\],
-  .bg-white.rounded-\[3rem\] {
-    border-color: #6366f1 !important;
-    /* Indigo 500 */
+  .crm-hover-effect:hover {
+    @apply -translate-y-[2px];
+    border: 1px solid #0a3d62 !important;
   }
 }
 
@@ -156,57 +128,37 @@
 
 body {
   @apply bg-[#F8FAFC] text-[#1e293b];
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden !important;
+  width: 100%;
 }
 
-#root {
-  min-height: 100vh;
+/* User Requested: Force all text sizes to be standard 14px */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+a,
+button,
+input,
+select,
+textarea,
+th,
+td,
+label {
+  font-size: 14px;
+  line-height: 1.5 !important;
 }
 
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Custom scrollbar for areas that need it */
 .custom-scrollbar::-webkit-scrollbar {
   width: 5px;
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  @apply bg-transparent;
-}
-
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full hover:bg-gray-400 transition-colors;
-}
-
-/* Global Enforcer for Modal Scrolling */
-/* Ensures all fixed overlay modals scroll cleanly on short screens */
-.fixed.inset-0>.bg-white,
-.fixed.inset-0>.crm-card {
-  max-height: 90vh !important;
-  overflow-y: auto !important;
-  overscroll-behavior: contain;
-}
-
-.fixed.inset-0>.bg-white::-webkit-scrollbar,
-.fixed.inset-0>.crm-card::-webkit-scrollbar {
-  width: 6px;
-}
-
-.fixed.inset-0>.bg-white::-webkit-scrollbar-track,
-.fixed.inset-0>.crm-card::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.fixed.inset-0>.bg-white::-webkit-scrollbar-thumb,
-.fixed.inset-0>.crm-card::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-  border-radius: 20px;
+  @apply bg-gray-300 rounded-full hover:bg-gray-400;
 }

@@ -14,7 +14,7 @@ const useAppStore = create((set) => ({
     role: 'Super Admin',
     isAuthenticated: false,
     user: null,
-    authToken: localStorage.getItem('token') || null,
+    authToken: null,
     country: 'Global',
     statusFilter: 'All Stages',
     dateRange: { label: 'Last 30 Days', from: null, to: null },
@@ -28,11 +28,15 @@ const useAppStore = create((set) => ({
 
     setRole: (role) => set({ role }),
 
-    login: (role, userData) => set({
-        role,
-        isAuthenticated: true,
-        user: userData || { name: 'Demo User', email: `${role.toLowerCase().replace(' ', '.')}@crm.com` }
-    }),
+    login: (backendRole, userData) => {
+        // Support both raw backend enum (e.g. 'SUPER_ADMIN') and already-mapped display roles (e.g. 'Super Admin')
+        const role = ROLE_MAP[backendRole] || backendRole;
+        set({
+            role,
+            isAuthenticated: true,
+            user: userData
+        });
+    },
 
     logout: () => {
         localStorage.removeItem('token')
@@ -50,3 +54,5 @@ const useAppStore = create((set) => ({
 }))
 
 export default useAppStore
+
+

@@ -219,7 +219,7 @@ const TaskList = () => {
             {/* View Task Modal */}
             {showViewModal && selectedTask && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Task Details</h2>
                             <button onClick={() => setShowViewModal(false)} className="text-white hover:text-gray-200">
@@ -240,7 +240,7 @@ const TaskList = () => {
                                     <p className="text-sm text-gray-600 mb-1">Service User</p>
                                     <p className="text-lg font-semibold text-gray-800">{selectedTask.serviceUser}</p>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-sm text-gray-600 mb-1">Due Date</p>
                                         <p className="text-lg font-semibold text-gray-800">{selectedTask.dueDate}</p>
@@ -297,7 +297,7 @@ const TaskList = () => {
             {/* Mark Complete Modal */}
             {showCompleteModal && selectedTask && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-green-500 to-teal-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Mark Task Complete</h2>
                             <button onClick={() => setShowCompleteModal(false)} className="text-white hover:text-gray-200">
@@ -350,7 +350,7 @@ const TaskList = () => {
             {/* Report Issue Modal */}
             {showIssueModal && selectedTask && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-red-500 to-orange-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Report Issue</h2>
                             <button onClick={() => setShowIssueModal(false)} className="text-white hover:text-gray-200">
@@ -414,3 +414,5 @@ const TaskList = () => {
 }
 
 export default TaskList
+
+

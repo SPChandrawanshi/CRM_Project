@@ -1,6 +1,6 @@
-// Admin - Team Members Page
 import { useState } from 'react'
 import { FaUsers, FaPlus, FaEdit, FaTrash, FaEye } from 'react-icons/fa'
+import { useAdminActions } from '../../../hooks/useCrmMutations'
 
 const TeamMembers = () => {
     const teamMembers = [
@@ -8,6 +8,7 @@ const TeamMembers = () => {
         { id: 2, name: 'Jane Smith', role: 'Carer', phone: '07987654321', email: 'jane@pova.com', status: 'Active' },
         { id: 3, name: 'Mike Johnson', role: 'Nurse', phone: '07555123456', email: 'mike@pova.com', status: 'Inactive' },
     ]
+    const { executeAction } = useAdminActions()
 
     return (
         <div className="p-6">
@@ -20,8 +21,9 @@ const TeamMembers = () => {
                     <p className="text-gray-600">Manage your staff members</p>
                 </div>
                 <button
-                    onClick={() => alert('Add Team Member functionality coming soon!')}
-                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:shadow-lg transition-all"
+                    onClick={() => executeAction.mutate('add_team_member')}
+                    disabled={executeAction.isPending}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
                 >
                     <FaPlus />
                     Add Team Member
@@ -59,20 +61,23 @@ const TeamMembers = () => {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
                                             <button
-                                                onClick={() => alert(`Viewing details for ${member.name}...`)}
-                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                onClick={() => executeAction.mutate('view_team_member')}
+                                                disabled={executeAction.isPending}
+                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
                                             >
                                                 <FaEye />
                                             </button>
                                             <button
-                                                onClick={() => alert(`Editing ${member.name}...`)}
-                                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                onClick={() => executeAction.mutate('edit_team_member')}
+                                                disabled={executeAction.isPending}
+                                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
                                             >
                                                 <FaEdit />
                                             </button>
                                             <button
-                                                onClick={() => alert(`Deleting ${member.name}...`)}
-                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                onClick={() => executeAction.mutate('delete_team_member')}
+                                                disabled={executeAction.isPending}
+                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                                             >
                                                 <FaTrash />
                                             </button>
@@ -89,3 +94,5 @@ const TeamMembers = () => {
 }
 
 export default TeamMembers
+
+

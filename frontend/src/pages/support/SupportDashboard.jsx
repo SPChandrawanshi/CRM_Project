@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../../lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { useSupportActions } from '../../hooks/useCrmMutations'
-import apiClient from '../../lib/apiClient'
+import api from '../../services/api'
+import { useNavigate } from 'react-router-dom'
 import { toast } from '../../components/ui/Toast'
 
 const QuickStat = ({ title, value, icon: Icon, color, onClick }) => (
@@ -35,7 +36,8 @@ const QuickStat = ({ title, value, icon: Icon, color, onClick }) => (
 )
 
 const SupportDashboard = () => {
-    const { bulkAssign, assignLead, createLead } = useSupportActions()
+    const navigate = useNavigate()
+    const { bulkAssign, assignLead, createLead, convertLead } = useSupportActions()
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedLeads, setSelectedLeads] = useState([])
     const [assignmentModalOpen, setAssignmentModalOpen] = useState(false)
@@ -46,7 +48,7 @@ const SupportDashboard = () => {
     // Fetch Counselors for assignment
     const { data: counselorsResp } = useQuery({
         queryKey: ['counselors-list'],
-        queryFn: () => apiClient.get('/users')
+        queryFn: () => api.get('/users')
     })
     const usersArr = Array.isArray(counselorsResp?.data) ? counselorsResp.data : (Array.isArray(counselorsResp) ? counselorsResp : [])
     const counselors = usersArr.filter(u => u.role === 'COUNSELOR' || u.role === 'Counselor')
@@ -54,12 +56,12 @@ const SupportDashboard = () => {
     // Fetch Real Data
     const { data: dashboardData, refetch: refetchDash } = useQuery({
         queryKey: ['support-dashboard'],
-        queryFn: () => apiClient.get('/support/dashboard')
+        queryFn: () => api.get('/support/dashboard')
     })
 
     const { data: queueResp, refetch: refetchQueue, isLoading } = useQuery({
         queryKey: ['support-queue'],
-        queryFn: () => apiClient.get('/support/leads/queue')
+        queryFn: () => api.get('/support/leads/queue')
     })
 
     const queueData = Array.isArray(queueResp?.data) ? queueResp.data : (Array.isArray(queueResp) ? queueResp : [])
@@ -130,13 +132,13 @@ const SupportDashboard = () => {
     }
 
     const convertToCrm = (lead) => {
-        toast.success(`${lead.name} mapped to CRM ecosystem rules successfully`)
+        convertLead.mutate(lead.id);
     }
 
     return (
-        <div className="space-y-8 max-w-7xl mx-auto px-4 py-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
+        <div className="space-y-8 max-w-7xl w-full min-w-0 mx-auto px-4 sm:px-0 py-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 flex-wrap">
+                <div className="min-w-0">
                     <h1 className="text-2xl font-black text-[#111827] uppercase tracking-tight">New Leads Queue</h1>
                     <p className="text-sm font-medium text-[#6B7280] mt-1">Manage unassigned leads and orchestrate routing protocols.</p>
                 </div>
@@ -147,7 +149,10 @@ const SupportDashboard = () => {
                     >
                         <UserPlus size={16} /> Provision Manual Node
                     </button>
-                    <button className="bg-white border border-[#E5E7EB] px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest text-[#111827] shadow-sm hover:border-indigo-100 hover:text-indigo-600 transition-all flex items-center gap-2">
+                    <button 
+                        onClick={() => navigate('/analytics')}
+                        className="bg-white border border-[#E5E7EB] px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest text-[#111827] shadow-sm hover:border-indigo-100 hover:text-indigo-600 transition-all flex items-center gap-2"
+                    >
                         <Filter size={16} className="text-indigo-400" /> Filter Queue
                     </button>
                     {selectedLeads.length > 0 && (
@@ -187,9 +192,9 @@ const SupportDashboard = () => {
                 />
             </div>
 
-            <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-sm flex flex-col overflow-hidden">
-                <div className="px-6 py-5 border-b border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gray-50/30">
-                    <div className="flex items-center gap-4">
+            <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-sm flex flex-col overflow-hidden w-full min-w-0">
+                <div className="px-4 sm:px-6 py-5 border-b border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gray-50/30 flex-wrap">
+                    <div className="flex items-center gap-4 flex-wrap">
                         <h3 className="font-black text-[#111827] text-xs uppercase tracking-widest">Inbound Triage</h3>
                         <div className="h-5 w-px bg-gray-200 hidden sm:block" />
                         <span className="bg-rose-50 text-rose-600 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-rose-100 animate-pulse flex items-center gap-1.5">
@@ -207,13 +212,13 @@ const SupportDashboard = () => {
                                 className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all shadow-sm"
                             />
                         </div>
-                        <button onClick={() => refetchQueue()} className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all text-gray-400 hover:text-indigo-600 shadow-sm">
+                        <button onClick={() => refetchQueue()} className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all text-gray-400 hover:text-indigo-600 shadow-sm shrink-0">
                             <RefreshCcw size={16} className={isLoading ? "animate-spin" : ""} />
                         </button>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto no-scrollbar min-h-[300px]">
+                <div className="overflow-x-auto no-scrollbar min-h-[300px] w-full max-w-full">
                     <table className="w-full text-left border-collapse min-w-[900px]">
                         <thead>
                             <tr className="bg-[#F9FAFB]">
@@ -403,7 +408,7 @@ const SupportDashboard = () => {
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col"
+                            className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar"
                         >
                             <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                                 <h2 className="text-lg font-black text-[#111827] uppercase tracking-tight flex items-center gap-2">
@@ -469,3 +474,6 @@ const SupportDashboard = () => {
 }
 
 export default SupportDashboard
+
+
+

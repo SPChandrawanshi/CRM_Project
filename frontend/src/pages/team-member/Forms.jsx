@@ -1,7 +1,7 @@
-// Team Member - Forms Page
 import { useState } from 'react'
 import { FaFileAlt, FaEye, FaDownload, FaTimes, FaCheckCircle, FaClock } from 'react-icons/fa'
 import { jsPDF } from 'jspdf'
+import { toast } from '../../components/ui/Toast'
 
 const Forms = () => {
     const [showViewModal, setShowViewModal] = useState(false)
@@ -100,7 +100,7 @@ const Forms = () => {
         doc.text(splitText, 14, 140)
 
         doc.save(`${form.formName.toLowerCase().replace(/\s+/g, '-')}-${form.id}.pdf`)
-        alert('Form PDF Downloaded Successfully!')
+        toast.success('Form PDF Downloaded Successfully!')
     }
 
     return (
@@ -281,3 +281,5 @@ const Forms = () => {
 }
 
 export default Forms
+
+

@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../../lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { useChannelActions } from '../../hooks/useCrmMutations'
-import apiClient from '../../lib/apiClient'
+import api from '../../services/api'
 
-const AddChannelModal = ({ isOpen, onClose, onAdd }) => {
+const AddChannelModal = ({ isOpen, onClose, onAdd, isPending }) => {
     const [formData, setFormData] = useState({ client: '', type: 'WhatsApp', detail: '', country: 'India' });
 
     if (!isOpen) return null;
@@ -23,7 +23,7 @@ const AddChannelModal = ({ isOpen, onClose, onAdd }) => {
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
-                className="bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl"
+                className="bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar"
             >
                 <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                     <div>
@@ -46,7 +46,7 @@ const AddChannelModal = ({ isOpen, onClose, onAdd }) => {
                                 className="w-full px-6 py-4 bg-gray-50 border border-transparent focus:border-indigo-100 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 rounded-2xl text-sm font-bold outline-none transition-all placeholder:text-gray-300"
                             />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] ml-1">Protocol Type</label>
                                 <select
@@ -56,7 +56,7 @@ const AddChannelModal = ({ isOpen, onClose, onAdd }) => {
                                 >
                                     <option>WhatsApp</option>
                                     <option>Facebook</option>
-                                    <option>Web</option>
+                                    <option>Website</option>
                                 </select>
                             </div>
                             <div className="space-y-1.5">
@@ -89,12 +89,14 @@ const AddChannelModal = ({ isOpen, onClose, onAdd }) => {
                     </div>
                 </div>
                 <div className="p-8 bg-gray-50/50 border-t border-gray-100 flex gap-3">
-                    <button onClick={onClose} className="flex-1 px-8 py-4 text-xs font-black uppercase tracking-widest text-gray-400 hover:bg-white rounded-2xl transition-all border border-transparent hover:border-gray-100">Abort</button>
+                    <button onClick={onClose} disabled={isPending} className="flex-1 px-8 py-4 text-xs font-black uppercase tracking-widest text-gray-400 hover:bg-white rounded-2xl transition-all border border-transparent hover:border-gray-100 disabled:opacity-50">Abort</button>
                     <button
                         onClick={() => onAdd(formData)}
-                        className="flex-[2] bg-[#111827] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow flex items-center justify-center gap-2"
+                        disabled={isPending || !formData.client || !formData.detail}
+                        className="flex-[2] bg-[#111827] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Save size={16} /> Deploy Node
+                        {isPending ? <Activity size={16} className="animate-spin" /> : <Save size={16} />}
+                        {isPending ? 'Deploying...' : 'Deploy Node'}
                     </button>
                 </div>
             </motion.div>
@@ -117,7 +119,7 @@ const ChannelDetailModal = ({ channel, onClose }) => {
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
-                className="bg-white rounded-[2.5rem] w-full max-w-2xl overflow-hidden shadow-2xl"
+                className="bg-white rounded-[2.5rem] w-full max-w-2xl overflow-hidden shadow-2xl mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar"
                 onClick={e => e.stopPropagation()}
             >
                 <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
@@ -209,10 +211,10 @@ const ChannelsControl = () => {
     const [selectedChannel, setSelectedChannel] = useState(null)
     const [confirmDelete, setConfirmDelete] = useState(null)
 
-    const { data: channels = [], isLoading } = useQuery({
+    const { data: channels = [], isLoading, refetch } = useQuery({
         queryKey: ['channels'],
         queryFn: async () => {
-            const res = await apiClient.get('/channels');
+            const res = await api.get('/channels');
             const dataToMap = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
             return dataToMap.map(ch => ({
                 id: ch.id,
@@ -235,19 +237,33 @@ const ChannelsControl = () => {
         return matchesType && matchesCountry && matchesSearch
     })
 
-    const handleAddChannel = (data) => {
+    const [isSaving, setIsSaving] = useState(false)
+
+    const handleAddChannel = async (data) => {
         // Transform UI data to backend schema
         const payload = {
             name: data.client,
             type: data.type,
+            number: data.detail,
+            country: data.country,
             config: {
                 detail: data.detail,
                 country: data.country
             }
         };
-        addChannel.mutate(payload, {
-            onSuccess: () => setIsAddModalOpen(false)
-        })
+        
+        setIsSaving(true);
+        try {
+            await api.post('/channels', payload);
+            setIsAddModalOpen(false);
+            refetch();
+            alert('Channel created successfully! Data has been saved to the database.');
+        } catch (error) {
+            console.error(error);
+            alert(`Connection or server error: ${error.response?.data?.message || error.message}`);
+        } finally {
+            setIsSaving(false);
+        }
     }
 
     const handleDelete = (id) => {
@@ -260,57 +276,58 @@ const ChannelsControl = () => {
         <div className="space-y-8 pb-12">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-[#111827] uppercase tracking-tight">Global Channel Infrastructure</h1>
-                    <p className="text-sm font-medium text-[#6B7280]">Centralized provisioning and orchestration of communication protocol nodes.</p>
+                    <h1 className="text-2xl md:text-3xl font-black text-[#111827] uppercase tracking-tight">Channel Infrastructure</h1>
+                    <p className="text-xs md:text-sm font-medium text-[#6B7280]">Provisioning communication protocol nodes.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setIsAddModalOpen(true)}
-                        className="bg-[#111827] text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow flex items-center gap-3 active:scale-95"
-                    >
-                        <Plus size={18} strokeWidth={2.5} />
-                        Provision New Channel
-                    </button>
-                </div>
+                <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="w-full sm:w-auto bg-[#111827] text-white px-6 md:px-8 py-3.5 md:py-4 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-black transition-all shadow flex items-center justify-center gap-3 active:scale-95"
+                >
+                    <Plus size={18} strokeWidth={2.5} />
+                    <span>Provision Node</span>
+                </button>
             </div>
 
             <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] shadow-sm overflow-hidden flex flex-col">
-                <div className="p-8 border-b border-[#E5E7EB] flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-gray-50/50">
-                    <div className="flex items-center gap-4 flex-1">
-                        <div className="relative w-full max-w-sm">
+                <div className="p-4 md:p-8 border-b border-[#E5E7EB] flex flex-col lg:flex-row lg:items-center justify-between gap-4 md:gap-6 bg-gray-50/50">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 flex-1 w-full lg:w-auto">
+                        <div className="relative w-full lg:max-w-sm">
                             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
                             <input
                                 type="text"
-                                placeholder="Locate client or endpoint..."
+                                placeholder="Locate node identity..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-12 pr-6 py-3.5 bg-white border border-gray-100 rounded-2xl text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-200 outline-none w-full transition-all"
+                                className="pl-12 pr-6 py-3.5 bg-white border border-gray-100 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-200 outline-none w-full transition-all"
                             />
                         </div>
-                        <div className="h-10 w-px bg-gray-200 hidden md:block" />
-                        <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Zone:</span>
-                            <select
-                                value={filterCountry}
-                                onChange={e => setFilterCountry(e.target.value)}
-                                className="bg-white border border-gray-100 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-indigo-500/5 transition-all text-gray-600 appearance-none cursor-pointer pr-8 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlPSIjOTNhM2FmIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik02IDlsNiA2IDYtNiIvPjwvc3ZnPg==')] bg-no-repeat bg-[right_8px_center] bg-[length:16px_16px]"
-                            >
-                                <option>All</option>
-                                <option>India</option>
-                                <option>USA</option>
-                                <option>UAE</option>
-                                <option>UK</option>
-                            </select>
+                        <div className="h-4 w-px bg-gray-200 hidden sm:block" />
+                        <div className="flex items-center gap-2 px-1 justify-between sm:justify-start">
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Zone:</span>
+                            <div className="relative">
+                                <select
+                                    value={filterCountry}
+                                    onChange={e => setFilterCountry(e.target.value)}
+                                    className="bg-white border border-gray-100 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-indigo-500/5 transition-all text-gray-600 appearance-none cursor-pointer pr-8"
+                                >
+                                    <option>All</option>
+                                    <option>India</option>
+                                    <option>USA</option>
+                                    <option>UAE</option>
+                                    <option>UK</option>
+                                </select>
+                                <ChevronRight size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 rotate-90 pointer-events-none" />
+                            </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-                        <div className="flex bg-white/80 border border-gray-100 p-1.5 rounded-2xl shadow-sm">
-                            {['All', 'WhatsApp', 'Facebook', 'Web'].map(type => (
+                    <div className="flex items-center justify-center lg:justify-end gap-2 overflow-x-auto no-scrollbar py-1 w-full lg:w-auto">
+                        <div className="flex bg-white/80 border border-gray-100 p-1.5 rounded-2xl shadow-sm min-w-fit">
+                            {['All', 'WhatsApp', 'Facebook', 'Website'].map(type => (
                                 <button
                                     key={type}
                                     onClick={() => setFilterType(type)}
                                     className={cn(
-                                        "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                        "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
                                         filterType === type ? "bg-[#111827] text-white shadow-lg" : "text-gray-400 hover:text-gray-600"
                                     )}
                                 >
@@ -321,7 +338,17 @@ const ChannelsControl = () => {
                     </div>
                 </div>
 
-                <div className="p-8 bg-gray-50/30">
+                <div className="p-4 md:p-8 bg-gray-50/30 relative min-h-[400px]">
+                    {isLoading && (
+                        <div className="absolute inset-0 bg-white/50 backdrop-blur-[2px] z-10 flex items-center justify-center">
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="p-4 bg-white rounded-3xl shadow-xl border border-indigo-50">
+                                    <Activity size={32} className="text-indigo-600 animate-spin" />
+                                </div>
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] animate-pulse">Synchronizing Nodes...</p>
+                            </div>
+                        </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
                         <AnimatePresence mode="popLayout">
                             {filteredChannels.map((ch) => (
@@ -345,8 +372,8 @@ const ChannelsControl = () => {
                                                     ch.type === 'Facebook' ? <Globe size={20} /> : <Activity size={20} />}
                                             </div>
                                             <div>
-                                                <h3 className="font-black text-[13px] text-[#111827] uppercase tracking-tight group-hover:text-indigo-600 transition-colors">{ch.client}</h3>
-                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-0.5">{ch.type} Protocol</p>
+                                                <h3 className="font-black text-sm text-[#111827] uppercase tracking-tight group-hover:text-indigo-600 transition-colors">{ch.client}</h3>
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-0.5">{ch.type} Protocol</p>
                                             </div>
                                         </div>
                                         <div className={cn(
@@ -411,11 +438,18 @@ const ChannelsControl = () => {
                             ))}
                         </AnimatePresence>
                     </div>
-                    {filteredChannels.length === 0 && (
+                    {filteredChannels.length === 0 && !isLoading && (
                         <div className="py-20 text-center">
-                            <div className="bg-white rounded-3xl p-10 max-w-sm mx-auto shadow-sm border border-gray-100">
-                                <Globe className="mx-auto text-gray-200 mb-4" size={48} strokeWidth={1} />
-                                <p className="text-xs font-black text-gray-400 uppercase tracking-widest">No protocol nodes located in this sector.</p>
+                            <div className="bg-white rounded-3xl p-10 max-w-sm mx-auto shadow-sm border border-gray-100 mx-2 sm:mx-auto">
+                                <Globe className="mx-auto text-gray-200 mb-6" size={48} strokeWidth={1} />
+                                <h4 className="text-sm font-black text-[#111827] uppercase tracking-tight mb-2">Protocol Isolation</h4>
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-8">No communication nodes located in this sector.</p>
+                                <button 
+                                    onClick={() => refetch()}
+                                    className="w-full py-3 bg-gray-50 text-gray-400 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-transparent hover:border-indigo-100 flex items-center justify-center gap-2"
+                                >
+                                    <ExternalLink size={12} /> Force Infrastructure Sync
+                                </button>
                             </div>
                         </div>
                     )}
@@ -429,6 +463,7 @@ const ChannelsControl = () => {
                         isOpen={isAddModalOpen}
                         onClose={() => setIsAddModalOpen(false)}
                         onAdd={handleAddChannel}
+                        isPending={isSaving}
                     />
                 )}
                 {selectedChannel && (
@@ -448,7 +483,7 @@ const ChannelsControl = () => {
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             exit={{ scale: 0.9, y: 20 }}
-                            className="bg-white rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl p-8 text-center"
+                            className="bg-white rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl p-8 text-center mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar"
                         >
                             <div className="bg-rose-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <AlertCircle className="text-rose-500" size={32} />
@@ -478,3 +513,6 @@ const ChannelsControl = () => {
 }
 
 export default ChannelsControl
+
+
+

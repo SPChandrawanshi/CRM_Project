@@ -1,20 +1,25 @@
 import React, { useState } from 'react'
-import { Globe, Users, CreditCard, Activity, CheckCircle, Clock, Shield, Search, Filter, AlertTriangle, RefreshCcw, MoreVertical, Eye, Trash2, ShieldOff, X, UserCheck, AlertCircle, SearchSlash } from 'lucide-react'
+import { Globe, Users, CreditCard, Activity, CheckCircle, Clock, Shield, Search, Filter, AlertTriangle, RefreshCcw, MoreVertical, Eye, Trash2, ShieldOff, X, UserCheck, AlertCircle, SearchSlash, Database } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../../lib/utils'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useAdminActions, useSuperAdminActions, useCrmMutation } from '../../hooks/useCrmMutations'
-import apiClient from '../../lib/apiClient'
+import { useAdminActions, useSuperAdminActions, useCrmMutation, useSnapshot } from '../../hooks/useCrmMutations'
+import api from '../../services/api'
 import useAppStore from '../../store/useStore'
+import { useNavigate } from 'react-router-dom'
 
 const Icons = { Globe, Users, CreditCard, Activity, Shield }
 
-const AdminKPICard = ({ title, value, icon: Icon, color, subValue, trend, isRefetching }) => (
+const AdminKPICard = ({ title, value, icon: Icon, color, subValue, trend, isRefetching, onClick }) => (
     <motion.div
-        whileHover={{ y: -5, scale: 1.02 }}
+        whileHover={{ y: -5, scale: (onClick ? 1.05 : 1.02) }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="crm-card relative overflow-hidden group border-none shadow-2xl shadow-slate-200/50"
+        onClick={onClick}
+        className={cn(
+            "crm-card relative overflow-hidden group border-none shadow-2xl shadow-slate-200/50 transition-all",
+            onClick && "cursor-pointer active:scale-95"
+        )}
     >
         <div className="relative z-10">
             <div className="flex items-center justify-between mb-6">
@@ -76,7 +81,7 @@ const ActivityDetailModal = ({ activity, onClose }) => {
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
-                className="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl"
+                className="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar"
                 onClick={e => e.stopPropagation()}
             >
                 <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
@@ -89,7 +94,7 @@ const ActivityDetailModal = ({ activity, onClose }) => {
                     </button>
                 </div>
                 <div className="p-8 space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Action Executed</p>
                             <p className="text-sm font-black text-[#111827]">{activity.action}</p>
@@ -127,14 +132,16 @@ const ActivityDetailModal = ({ activity, onClose }) => {
     )
 }
 
-const Overview = () => {
+const SuperAdminOverview = () => {
+    const navigate = useNavigate()
+    const { createSnapshot } = useSnapshot()
     const { country, statusFilter, dateRange } = useAppStore()
     const queryClient = useQueryClient()
     const { downloadReport } = useAdminActions()
     const { toggleClientChannelStatus, deleteClientChannel, updateDashboard } = useSuperAdminActions()
 
     const dispatchLead = useCrmMutation({
-        mutationFn: ({ leadId, counselorId }) => apiClient.post('/super-admin/leads/dispatch', { leadId, counselorId }),
+        mutationFn: ({ leadId, counselorId }) => api.post('/super-admin/leads/dispatch', { leadId, counselorId }),
         successMessage: 'Lead dispatched successfully',
         invalidateQueries: ['dispatch-queue', 'leads']
     })
@@ -149,7 +156,7 @@ const Overview = () => {
     const { data: dashboardData, refetch: refetchKpis, isRefetching: isRefetchingKpis, isLoading: isLoadingKpis } = useQuery({
         queryKey: ['super-admin-dashboard', country, statusFilter, dateRange?.label],
         queryFn: async () => {
-            const resp = await apiClient.get('/super-admin/dashboard/kpis', {
+            const resp = await api.get('/super-admin/dashboard/kpis', {
                 params: { country, status: statusFilter, dateRange: dateRange?.label }
             })
             return resp.data?.data || {}
@@ -159,15 +166,15 @@ const Overview = () => {
     const stats = dashboardData || {}
 
     const kpis = [
-        { title: 'Total Clients Volume', value: stats.totalClients || 0, icon: 'Globe', color: 'bg-indigo-600 text-indigo-600', trend: 12, subValue: 'Active global nodes' },
-        { title: 'Network Lead Influx', value: stats.totalLeads || 0, icon: 'Users', color: 'bg-emerald-600 text-emerald-600', trend: 8, subValue: 'Total recorded leads' },
-        { title: 'Gross Revenue Insight', value: `$${((stats.totalRevenue || 0) / 1000).toFixed(1)}k`, icon: 'CreditCard', color: 'bg-rose-600 text-rose-600', trend: 15, subValue: '+12.5% Growth' },
-        { title: 'Active Channels', value: stats.activeChannels || 0, icon: 'Activity', color: 'bg-amber-600 text-amber-600', trend: -2, subValue: 'Operational links' },
+        { title: 'Total Clients Volume', value: stats.totalClients || 0, icon: 'Globe', color: 'bg-indigo-600 text-indigo-600', trend: 12, subValue: 'Active global nodes', onClick: () => navigate('/super-admin/admins') },
+        { title: 'Network Lead Influx', value: stats.totalLeads || 0, icon: 'Users', color: 'bg-emerald-600 text-emerald-600', trend: 8, subValue: 'Total recorded leads', onClick: () => navigate('/leads') },
+        { title: 'Gross Revenue Insight', value: `$${((stats.totalRevenue || 0) / 1000).toFixed(1)}k`, icon: 'CreditCard', color: 'bg-rose-600 text-rose-600', trend: 15, subValue: '+12.5% Growth', onClick: () => navigate('/super-admin/billing') },
+        { title: 'Active Channels', value: stats.activeChannels || 0, icon: 'Activity', color: 'bg-amber-600 text-amber-600', trend: -2, subValue: 'Operational links', onClick: () => navigate('/super-admin/channels') },
     ]
 
     const { data: activityResp } = useQuery({
         queryKey: ['audit-logs', country],
-        queryFn: () => apiClient.get('/audit/logs', { params: { country } }),
+        queryFn: () => api.get('/audit/logs', { params: { country } }),
         refetchInterval: 30000
     })
     const timelineData = (activityResp?.data || []).map(log => ({
@@ -179,14 +186,14 @@ const Overview = () => {
 
     const { data: leadsResp, isLoading: isLoadingLeads } = useQuery({
         queryKey: ['dispatch-queue', country, statusFilter],
-        queryFn: () => apiClient.get('/super-admin/leads/dispatch-queue', {
+        queryFn: () => api.get('/super-admin/leads/dispatch-queue', {
             params: { country, status: statusFilter }
         })
     })
     
     const { data: usersResp } = useQuery({
         queryKey: ['users-assignable'],
-        queryFn: () => apiClient.get('/users').then(res => res.data.filter(u => ['COUNSELOR', 'TEAM_LEADER', 'MANAGER'].includes(u.role)))
+        queryFn: () => api.get('/users').then(res => res.data.filter(u => ['COUNSELOR', 'TEAM_LEADER', 'MANAGER'].includes(u.role)))
     })
 
     const leadsData = leadsResp?.data || []
@@ -220,24 +227,34 @@ const Overview = () => {
         <div className="space-y-8 pb-12">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-[#111827] uppercase tracking-tight">Global Architecture Overview</h1>
-                    <p className="text-sm font-medium text-[#6B7280]">Centralized monitoring of tenant health, data throughput, and system-wide telemetry.</p>
+                    <h1 className="text-2xl md:text-3xl font-black text-[#111827] uppercase tracking-tight">Global Architecture Overview</h1>
+                    <p className="text-xs md:text-sm font-medium text-[#6B7280]">Centralized monitoring of tenant health and throughput.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => updateDashboard.mutate()}
-                        className={cn(
-                            "p-4 bg-white border border-gray-100 rounded-2xl text-gray-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm active:scale-90",
-                            (isRefetchingKpis || updateDashboard.isPending) && "text-indigo-600 animate-spin"
-                        )}
-                        title="Synchronize Global Stats"
-                    >
-                        <RefreshCcw size={20} strokeWidth={2.5} />
-                    </button>
+                <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => updateDashboard.mutate()}
+                            className={cn(
+                                "flex-1 sm:flex-none p-4 bg-white border border-gray-100 rounded-2xl text-gray-400 hover:text-indigo-600 hover:border-indigo-100 transition-all shadow-sm active:scale-90 flex items-center justify-center",
+                                (isRefetchingKpis || updateDashboard.isPending) && "text-indigo-600 animate-spin"
+                            )}
+                            title="Synchronize Global Stats"
+                        >
+                            <RefreshCcw size={20} strokeWidth={2.5} />
+                        </button>
+                        <button 
+                            onClick={() => createSnapshot.mutate()}
+                            disabled={createSnapshot.isPending}
+                            className="flex-[2] sm:flex-none bg-white border border-gray-100 text-[#111827] px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:border-indigo-200 transition-all shadow-sm flex items-center justify-center gap-2"
+                        >
+                            {createSnapshot.isPending ? <Activity className="animate-spin" size={14} /> : <Database size={14} />}
+                            Snapshot DB
+                        </button>
+                    </div>
                     <button
                         onClick={() => downloadReport.mutate('global_overview')}
                         disabled={downloadReport.isPending}
-                        className="px-8 py-4 bg-[#111827] text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow flex items-center gap-3 active:scale-95"
+                        className="w-full sm:w-auto px-6 sm:px-8 py-4 bg-[#111827] text-white rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest hover:bg-black transition-all shadow flex items-center justify-center gap-3 active:scale-95"
                     >
                         {downloadReport.isPending ? <RefreshCcw className="animate-spin" size={16} /> : <Activity size={16} strokeWidth={2.5} />}
                         {downloadReport.isPending ? 'Processing...' : 'Export Global Insight'}
@@ -254,11 +271,11 @@ const Overview = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Timeline Column */}
                 <div className="lg:col-span-4 crm-card !p-0 flex flex-col overflow-hidden">
-                    <div className="px-8 py-6 border-b border-[#E5E7EB] flex items-center justify-between bg-gray-50/50">
+                    <div className="px-4 md:px-8 py-6 border-b border-[#E5E7EB] flex items-center justify-between bg-gray-50/50">
                         <h3 className="font-black text-[#111827] text-xs uppercase tracking-[0.2em]">Live Architecture Stream</h3>
                         <div className="h-2 w-2 rounded-full bg-rose-500 animate-ping" />
                     </div>
-                    <div className="flex-1 p-8">
+                    <div className="flex-1 p-4 md:p-8">
                         <div className="relative space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
                             <AnimatePresence mode='popLayout'>
                                 {timelineData.map((item, i) => (
@@ -295,19 +312,19 @@ const Overview = () => {
 
                 {/* Manual Assignment Panel */}
                 <div className="lg:col-span-8 crm-card !p-0 flex flex-col overflow-hidden">
-                    <div className="p-8 border-b border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-gray-50/50">
+                    <div className="p-4 md:p-8 border-b border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-6 bg-gray-50/50">
                         <div>
-                            <h3 className="font-black text-[#111827] text-[14px] uppercase tracking-tight">Manual Assignment Panel</h3>
-                            <p className="text-[10px] font-medium text-gray-400 mt-1 uppercase tracking-widest">Override routing rules and manually dispatch high-value leads.</p>
+                            <h3 className="font-black text-[#111827] text-xs md:text-[14px] uppercase tracking-tight">Manual Assignment Panel</h3>
+                            <p className="text-[9px] md:text-[10px] font-medium text-gray-400 mt-1 uppercase tracking-widest">Override routing rules and manually dispatch leads.</p>
                         </div>
-                        <div className="relative">
+                        <div className="relative w-full sm:w-auto">
                             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
                             <input
                                 type="text"
-                                placeholder="Find leads requiring manual intervention..."
+                                placeholder="Find leads..."
                                 value={assignmentSearch}
                                 onChange={(e) => setAssignmentSearch(e.target.value)}
-                                className="pl-12 pr-6 py-3 bg-white border border-gray-100 rounded-2xl text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-200 outline-none w-full sm:w-80 transition-all"
+                                className="pl-12 pr-6 py-3 bg-white border border-gray-100 rounded-2xl text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-200 outline-none w-full sm:w-64 transition-all"
                             />
                         </div>
                     </div>
@@ -315,7 +332,7 @@ const Overview = () => {
                         <table className="w-full min-w-[800px] text-left border-collapse">
                             <thead>
                                 <tr className="bg-[#F9FAFB]/50">
-                                    <th className="px-8 py-5 font-black text-gray-400 uppercase tracking-widest text-[9px] w-[25%]">Lead Profile</th>
+                                    <th className="px-4 md:px-8 py-5 font-black text-gray-400 uppercase tracking-widest text-[9px] w-[25%]">Lead Profile</th>
                                     <th className="px-4 py-5 font-black text-gray-400 uppercase tracking-widest text-[9px]">Current Status</th>
                                     <th className="px-4 py-5 font-black text-gray-400 uppercase tracking-widest text-[9px]">Origin Source</th>
                                     <th className="px-4 py-5 font-black text-gray-400 uppercase tracking-widest text-[9px] w-[20%]">AI Confidence</th>
@@ -334,7 +351,7 @@ const Overview = () => {
                                             key={lead.id}
                                             className="hover:bg-gray-50/50 transition-all group"
                                         >
-                                            <td className="px-8 py-6">
+                                            <td className="px-4 md:px-8 py-6">
                                                 <div className="flex items-center gap-4">
                                                     <div className="h-10 w-10 bg-gray-100 text-gray-600 rounded-xl flex items-center justify-center font-black text-xs border border-gray-200 shrink-0">
                                                         {lead.name.charAt(0)}
@@ -380,7 +397,7 @@ const Overview = () => {
                                                     {lead.assignedTo}
                                                 </span>
                                             </td>
-                                            <td className="px-8 py-6 text-right">
+                                            <td className="px-4 md:px-8 py-6 text-right">
                                                 <button
                                                     onClick={() => setSelectedLead(lead)}
                                                     className="px-5 py-2.5 bg-white border border-[#111827] text-[#111827] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#111827] hover:text-white transition-all shadow-sm flex items-center gap-2 ml-auto shrink-0 group-hover:bg-[#111827] group-hover:text-white"
@@ -427,7 +444,7 @@ const Overview = () => {
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             exit={{ scale: 0.9, y: 20 }}
-                            className="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl border border-gray-100 flex flex-col"
+                            className="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl border border-gray-100 flex flex-col mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar"
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center shrink-0">
@@ -515,4 +532,7 @@ const Overview = () => {
     )
 }
 
-export default Overview
+export default SuperAdminOverview
+
+
+

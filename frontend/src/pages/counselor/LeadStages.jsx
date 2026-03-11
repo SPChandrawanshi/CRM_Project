@@ -1,164 +1,384 @@
-import React, { useState } from 'react'
-import { Search, Loader, Filter, CheckCircle2, ChevronRight, Activity, ArrowRight, Save } from 'lucide-react'
+import React, { useState, useMemo } from 'react'
+import { Search, Loader, Filter, CheckCircle2, ChevronRight, Activity, ArrowRight, Save, Plus, Clock, MessageSquare, XCircle, RefreshCcw, FileEdit, Phone } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../../lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { useCounselorActions } from '../../hooks/useCrmMutations'
-import apiClient from '../../lib/apiClient'
+import api from '../../services/api'
+import { useNavigate } from 'react-router-dom'
+import {
+    useReactTable,
+    getCoreRowModel,
+    getPaginationRowModel,
+    getSortedRowModel,
+    getFilteredRowModel,
+    flexRender,
+} from '@tanstack/react-table'
 
 const LeadStages = () => {
-    const { updateStage } = useCounselorActions()
-    const [searchTerm, setSearchTerm] = useState('')
+    const navigate = useNavigate()
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+    const { updateStage, addLead } = useCounselorActions()
+    const [sorting, setSorting] = useState([])
+    const [globalFilter, setGlobalFilter] = useState('')
+    const [selectedStoryLead, setSelectedStoryLead] = useState(null)
 
-    const { data: leads = [], isLoading } = useQuery({
-        queryKey: ['leads'],
+    const { data: resp, isLoading } = useQuery({
+        queryKey: ['leads-stages'],
         queryFn: async () => {
-            const res = await apiClient.get('/leads');
-            const leadsArr = Array.isArray(res?.data?.data) ? res.data.data : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
-            return leadsArr.map(l => ({
-                id: l.id,
-                leadName: l.name,
-                currentStage: l.stage,
-                lastUpdated: new Date(l.updatedAt).toLocaleDateString()
-            }));
+            const res = await api.get('/leads');
+            const data = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+            return data;
         }
     })
+    const leads = resp || []
 
-    const stagesData = leads;
+    const { data: storyData, isLoading: loadingStory } = useQuery({
+        queryKey: ['lead-story', selectedStoryLead?.id],
+        queryFn: async () => {
+            const res = await api.get(`/counselor/leads/${selectedStoryLead.id}/story`);
+            return Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+        },
+        enabled: !!selectedStoryLead
+    })
 
-    const filteredStages = stagesData.filter(s =>
-        s.leadName.toLowerCase().includes(searchTerm.toLowerCase())
+    const columns = useMemo(() => [
+        {
+            accessorKey: 'name',
+            header: () => <span className="uppercase tracking-[0.2em] text-[10px]">Lead Identity</span>,
+            cell: ({ row }) => (
+                <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center font-black text-xs text-indigo-600 shadow-sm group-hover:scale-110 transition-all">
+                        {row.original.name.charAt(0)}
+                    </div>
+                    <div>
+                        <div className="font-black text-slate-900 text-xs uppercase tracking-tight">{row.original.name}</div>
+                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{row.original.country}</div>
+                    </div>
+                </div>
+            )
+        },
+        {
+            accessorKey: 'stage',
+            header: () => <span className="uppercase tracking-[0.2em] text-[10px]">Current Status</span>,
+            cell: ({ row }) => (
+                <select 
+                    value={row.original.stage}
+                    onChange={(e) => updateStage.mutate({ leadId: row.original.id, stage: e.target.value })}
+                    className={cn(
+                        "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border appearance-none outline-none cursor-pointer transition-all",
+                        row.original.stage === 'Qualified' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                        row.original.stage === 'Converted' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
+                        row.original.stage === 'New' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                        row.original.stage === 'Lost' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                        'bg-amber-50 text-amber-700 border-amber-200'
+                    )}
+                >
+                    <option>New</option>
+                    <option>Contacted</option>
+                    <option>Pending</option>
+                    <option>Qualified</option>
+                    <option>Converted</option>
+                    <option>Lost</option>
+                </select>
+            )
+        },
+        {
+            accessorKey: 'updatedAt',
+            header: () => <span className="uppercase tracking-[0.2em] text-[10px]">Last Progression</span>,
+            cell: ({ getValue }) => (
+                <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <Clock className="h-3 w-3" />
+                    {getValue() ? new Date(getValue()).toLocaleDateString() : 'Awaiting Logic'}
+                </div>
+            )
+        },
+        {
+            id: 'actions',
+            header: () => <div className="text-right uppercase tracking-[0.2em] text-[10px]">Operations</div>,
+            cell: ({ row }) => (
+                <div className="flex items-center justify-end gap-2">
+                    <button 
+                        onClick={() => setSelectedStoryLead(row.original)}
+                        className="h-8 w-8 flex items-center justify-center bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-indigo-600 hover:border-indigo-100 hover:shadow-lg hover:shadow-indigo-500/10 transition-all active:scale-90"
+                        title="View Story"
+                    >
+                        <Activity size={14} />
+                    </button>
+                    <button 
+                        onClick={() => navigate('/inbox')}
+                        className="h-8 w-8 flex items-center justify-center bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-emerald-500 hover:border-emerald-100 hover:shadow-lg hover:shadow-emerald-500/10 transition-all active:scale-90"
+                        title="Communicate"
+                    >
+                        <MessageSquare size={14} />
+                    </button>
+                </div>
+            )
+        }
+    ], [updateStage.isPending])
+
+    const table = useReactTable({
+        data: leads,
+        columns,
+        state: { sorting, globalFilter },
+        onSortingChange: setSorting,
+        onGlobalFilterChange: setGlobalFilter,
+        getCoreRowModel: getCoreRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+    })
+
+    if (isLoading) return (
+        <div className="h-96 flex flex-col items-center justify-center gap-4">
+            <RefreshCcw className="animate-spin text-indigo-600" size={32} />
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Syncing Lifecycle Data...</p>
+        </div>
     )
 
-    const getStageColorList = (stage) => {
-        switch (stage) {
-            case 'Qualified': return 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:border-emerald-300'
-            case 'Converted': return 'text-indigo-700 bg-indigo-50 border-indigo-200 hover:border-indigo-300'
-            case 'New': return 'text-blue-700 bg-blue-50 border-blue-200 hover:border-blue-300'
-            case 'Lost': return 'text-rose-700 bg-rose-50 border-rose-200 hover:border-rose-300'
-            default: return 'text-amber-700 bg-amber-50 border-amber-200 hover:border-amber-300'
-        }
-    }
-
     return (
-        <div className="space-y-8">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div className="space-y-10 pb-20">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
                 <div>
-                    <h1 className="text-3xl font-black text-[#111827] uppercase tracking-tighter">Lead Pipeline</h1>
-                    <p className="text-sm font-medium text-[#6B7280] mt-1">Manage and track lifecycle transitions across your active portfolio.</p>
+                    <div className="flex items-center gap-3 mb-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
+                        <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em]">Operational Pipeline</span>
+                    </div>
+                    <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase">Lead Stages</h1>
+                    <p className="text-sm font-medium text-slate-500 mt-2 max-w-xl">
+                        Monitor and execute transitions across the entire lead lifecycle. Use <span className="text-indigo-600 font-black">Story View</span> for deep historical context.
+                    </p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button className="bg-white border text-gray-600 border-gray-200 px-5 py-2.5 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-gray-50 hover:text-indigo-600 transition-all shadow-sm flex items-center gap-2">
-                        <Filter size={14} /> Pipeline Filters
-                    </button>
-                    <button onClick={() => { }} disabled className="bg-[#111827] text-white px-5 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-indigo-100 flex items-center gap-2 disabled:opacity-50">
-                        <ArrowRight size={14} /> Bulk Update
+                <div className="flex items-center gap-4">
+                    <button 
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="h-14 bg-[#020617] text-white px-10 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-black transition-all shadow-2xl shadow-slate-900/20 active:scale-95 flex items-center gap-4 ring-1 ring-slate-800"
+                    >
+                        <Plus className="h-4 w-4" />
+                        <span>Manual Node</span>
                     </button>
                 </div>
             </div>
 
-            <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-sm overflow-hidden flex flex-col">
-                <div className="p-6 border-b border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gray-50/30">
-                    <div className="flex items-center gap-4">
-                        <h3 className="font-black text-[#111827] uppercase tracking-widest text-xs">Lifecycle Tracking</h3>
-                        <div className="h-5 w-px bg-gray-200 hidden sm:block" />
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded">
-                            {stagesData.length} Pipeline Records
-                        </span>
-                    </div>
-                    <div className="relative flex-1 sm:w-80 sm:flex-none">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            {/* Main Table Container */}
+            <div className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden flex flex-col">
+                <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-50/30">
+                    <div className="relative flex-1 max-w-md group">
+                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-indigo-500 transition-colors" />
                         <input
                             type="text"
-                            placeholder="Search lead profiles..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 outline-none transition-all shadow-sm"
+                            placeholder="Universal Lifecycle Search..."
+                            value={globalFilter}
+                            onChange={(e) => setGlobalFilter(e.target.value)}
+                            className="w-full pl-14 pr-6 py-4 bg-white border border-slate-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-200 text-xs font-black uppercase tracking-widest transition-all shadow-inner"
                         />
+                    </div>
+                    <div className="flex items-center gap-6">
+                        <button className="flex items-center gap-3 text-slate-400 hover:text-indigo-600 font-black text-[9px] uppercase tracking-[0.2em] transition-all group">
+                            <Filter className="h-4 w-4 text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                            <span>Stage Filters</span>
+                        </button>
                     </div>
                 </div>
 
-                <div className="overflow-x-auto no-scrollbar min-h-[400px]">
-                    {isLoading ? (
-                        <div className="h-64 flex flex-col items-center justify-center text-indigo-600 opacity-50">
-                            <Loader className="animate-spin mb-4" size={32} />
-                            <p className="text-[10px] font-black uppercase tracking-widest">Loading Pipeline Data...</p>
-                        </div>
-                    ) : filteredStages.length === 0 ? (
-                        <div className="h-64 flex flex-col items-center justify-center text-gray-400 opacity-50">
-                            <Activity size={48} className="mb-4" />
-                            <p className="text-[11px] font-black uppercase tracking-widest">No matching leads in pipeline.</p>
-                        </div>
-                    ) : (
-                        <table className="w-full text-left border-collapse min-w-[800px]">
-                            <thead>
-                                <tr className="bg-gray-50/50 border-b border-[#E5E7EB]">
-                                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Lead Profile</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Lifecycle Stage</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Last Updated</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <AnimatePresence>
-                                    {filteredStages.map((stage) => (
-                                        <motion.tr
-                                            layout
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            key={stage.id}
-                                            className="group hover:bg-gray-50/50 transition-colors border-b border-gray-50 last:border-0"
-                                        >
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-10 w-10 bg-gradient-to-br from-indigo-50 to-white text-indigo-600 rounded-2xl flex items-center justify-center font-black text-sm border border-indigo-100 shadow-sm shrink-0">
-                                                        {stage.leadName.charAt(0)}
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-black text-[#111827] group-hover:text-indigo-600 transition-colors uppercase tracking-tight text-xs">
-                                                            {stage.leadName}
-                                                        </div>
-                                                        <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">ID: {stage.id.toString().padStart(6, '0')}</div>
-                                                    </div>
-                                                </div>
+                <div className="overflow-x-auto no-scrollbar">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50/50">
+                                {table.getHeaderGroups().map(headerGroup => (
+                                    <React.Fragment key={headerGroup.id}>
+                                        {headerGroup.headers.map(header => (
+                                            <th key={header.id} className="px-8 py-6 font-black text-slate-400 text-[10px] uppercase tracking-[0.2em] border-b border-slate-100">
+                                                {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                                            </th>
+                                        ))}
+                                    </React.Fragment>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                            <AnimatePresence mode='popLayout'>
+                                {table.getRowModel().rows.map((row, index) => (
+                                    <motion.tr
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.98 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        transition={{ delay: index * 0.02 }}
+                                        key={row.id}
+                                        className="group hover:bg-slate-50/50 transition-all"
+                                    >
+                                        {row.getVisibleCells().map(cell => (
+                                            <td key={cell.id} className="px-8 py-7 transition-all">
+                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                             </td>
-                                            <td className="px-6 py-5 text-center">
-                                                <select
-                                                    value={stage.currentStage}
-                                                    onChange={(e) => updateStage.mutate({ leadId: stage.id, stage: e.target.value })}
-                                                    className={cn(
-                                                        "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border appearance-none outline-none cursor-pointer transition-all shadow-sm focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500",
-                                                        getStageColorList(stage.currentStage)
-                                                    )}
-                                                >
-                                                    <option>New</option>
-                                                    <option>Contacted</option>
-                                                    <option>Pending</option>
-                                                    <option>Qualified</option>
-                                                    <option>Converted</option>
-                                                    <option>Lost</option>
-                                                </select>
-                                            </td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-1.5 text-gray-500 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
-                                                    <Activity size={12} className="text-gray-300" />
-                                                    {stage.lastUpdated}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 text-right">
-                                                <button className="px-4 py-2 border border-indigo-100 bg-indigo-50 rounded-xl text-indigo-600 hover:bg-indigo-100 transition-all shadow-sm uppercase text-[10px] font-black tracking-widest inline-flex items-center gap-1">
-                                                    View Story <ChevronRight size={12} />
-                                                </button>
-                                            </td>
-                                        </motion.tr>
-                                    ))}
-                                </AnimatePresence>
-                            </tbody>
-                        </table>
-                    )}
+                                        ))}
+                                    </motion.tr>
+                                ))}
+                            </AnimatePresence>
+                        </tbody>
+                    </table>
                 </div>
             </div>
+
+            {/* Lead Story Modal */}
+            <AnimatePresence>
+                {selectedStoryLead && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="bg-white rounded-[2.5rem] w-full max-w-2xl overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[85vh] mx-2 sm:mx-auto"
+                        >
+                            <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50 shrink-0">
+                                <div>
+                                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
+                                        <Activity className="text-indigo-600" /> Lead Chronicles
+                                    </h3>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Lifecycle progression for <span className="text-indigo-600">{selectedStoryLead.name}</span></p>
+                                </div>
+                                <button onClick={() => setSelectedStoryLead(null)} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm">
+                                    <XCircle size={20} className="text-slate-300 hover:text-rose-500" />
+                                </button>
+                            </div>
+
+                            <div className="p-8 overflow-y-auto no-scrollbar flex-1">
+                                {loadingStory ? (
+                                    <div className="h-64 flex flex-col items-center justify-center gap-4 text-indigo-500 opacity-50">
+                                        <RefreshCcw className="animate-spin" size={32} />
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em]">Recalling memory records...</p>
+                                    </div>
+                                ) : !storyData || storyData.length === 0 ? (
+                                    <div className="h-64 flex flex-col items-center justify-center gap-4 text-slate-300">
+                                        <Activity size={48} className="opacity-20" />
+                                        <p className="text-[10px] font-black uppercase tracking-[0.2em]">Primitive node. No historical log identified.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-12 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-px before:bg-slate-100">
+                                        {storyData.map((item, idx) => (
+                                            <motion.div 
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: idx * 0.1 }}
+                                                key={idx} 
+                                                className="relative pl-12"
+                                            >
+                                                <div className={cn(
+                                                    "absolute left-0 top-0 h-6 w-6 rounded-lg flex items-center justify-center shadow-sm z-10 border",
+                                                    item.type === 'Activity' ? 'bg-indigo-500 text-white border-indigo-400' :
+                                                    item.type === 'Note' ? 'bg-amber-500 text-white border-amber-400' :
+                                                    'bg-emerald-500 text-white border-emerald-400'
+                                                )}>
+                                                    {item.type === 'Activity' ? <Activity size={10} /> :
+                                                     item.type === 'Note' ? <FileEdit size={10} /> :
+                                                     <Phone size={10} />}
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{item.action}</h4>
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{new Date(item.timestamp).toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                                                        <p className="text-[11px] font-medium text-slate-600 leading-relaxed uppercase tracking-tighter">{item.details}</p>
+                                                        {item.type === 'Activity' && <div className="mt-2 text-[8px] font-black text-indigo-400 uppercase tracking-widest italic">{item.action} Execution</div>}
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="p-6 bg-slate-50/50 border-t border-slate-50 flex justify-center">
+                                <button 
+                                    onClick={() => setSelectedStoryLead(null)}
+                                    className="px-8 py-3 bg-white border border-slate-200 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] text-slate-400 hover:text-slate-900 hover:border-slate-300 transition-all active:scale-95 shadow-sm"
+                                >
+                                    Egress Chronicles
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Add Lead Modal */}
+            <AnimatePresence>
+                {isAddModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="bg-white rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl border border-slate-100 mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar"
+                        >
+                            <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                                <div>
+                                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Provision Manual Node</h3>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Direct lead injection into operations</p>
+                                </div>
+                                <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-white rounded-xl transition-all shadow-sm">
+                                    <XCircle size={20} className="text-slate-300" />
+                                </button>
+                            </div>
+                            <form onSubmit={(e) => {
+                                e.preventDefault()
+                                const formData = Object.fromEntries(new FormData(e.target))
+                                addLead.mutate(formData, {
+                                    onSuccess: () => setIsAddModalOpen(false)
+                                })
+                            }} className="p-8 space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Lead Identity</label>
+                                        <input name="name" required placeholder="Full Name" className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-200 outline-none transition-all shadow-inner" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Channel Address</label>
+                                        <input name="email" type="email" required placeholder="email@address.com" className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-200 outline-none transition-all shadow-inner" />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Territory</label>
+                                        <input 
+                                            name="country" 
+                                            required 
+                                            placeholder="Country" 
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-200 outline-none transition-all shadow-inner" 
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Lead Stage</label>
+                                        <select 
+                                            name="stage" 
+                                            defaultValue="New"
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-200 outline-none transition-all shadow-inner appearance-none"
+                                        >
+                                            {['New', 'Contacted', 'Qualified', 'Converted', 'Lost'].map(s => (
+                                                <option key={s} value={s}>{s}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                                    <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Abort</button>
+                                    <button 
+                                        type="submit" 
+                                        disabled={addLead.isPending}
+                                        className="px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2"
+                                    >
+                                        {addLead.isPending && <RefreshCcw size={14} className="animate-spin" />}
+                                        Establish Node
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }

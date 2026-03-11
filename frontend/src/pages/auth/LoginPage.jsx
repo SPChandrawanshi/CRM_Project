@@ -16,7 +16,7 @@ import {
     Loader2
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
-import apiClient from '../../lib/apiClient'
+import api from '../../services/api'
 import useAppStore, { ROLE_MAP } from '../../store/useStore'
 import { useNavigate } from 'react-router-dom'
 
@@ -86,7 +86,7 @@ const LoginPage = () => {
         setIsLoading(true)
         setError('')
         try {
-            const response = await apiClient.post('/auth/login', { 
+            const response = await api.post('/auth/login', { 
                 email: email.trim().toLowerCase(), 
                 password 
             })
@@ -97,6 +97,8 @@ const LoginPage = () => {
                 localStorage.setItem('refreshToken', refreshToken)
                 // Map backend role enum to frontend role string
                 const frontendRole = ROLE_MAP[user.role] || user.role
+                // Save role to localStorage
+                localStorage.setItem('role', frontendRole)
                 login(frontendRole, user)
                 const homePath = roleHomePages[frontendRole] || '/'
                 navigate(homePath)
@@ -135,7 +137,7 @@ const LoginPage = () => {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {[
                             { label: 'Real-time Sync', sub: '99.9% Uptime', icon: Activity },
                             { label: 'AI Qualified', sub: 'ML Protocol', icon: BrainCircuit },
@@ -153,11 +155,11 @@ const LoginPage = () => {
                 <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="bg-white/5 backdrop-blur-3xl border border-white/10 p-8 md:p-12 rounded-[3.5rem] shadow-2xl space-y-10"
+                    className="bg-white/5 backdrop-blur-3xl border border-white/10 p-6 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] shadow-2xl space-y-8 md:space-y-10"
                 >
-                    <div className="space-y-2">
-                        <h2 className="text-2xl font-black text-white uppercase tracking-tight">Establish Session</h2>
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Select an administrative identity to initialize access</p>
+                    <div className="space-y-2 text-center md:text-left">
+                        <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">Establish Session</h2>
+                        <p className="text-[9px] md:text-[10px] font-black text-gray-500 uppercase tracking-widest">Select an identity to initialize access</p>
                     </div>
 
                     {error && (
@@ -241,3 +243,6 @@ const LoginPage = () => {
 }
 
 export default LoginPage
+
+
+

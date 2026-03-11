@@ -250,7 +250,7 @@ const MyForms = () => {
                                 </span>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2 mb-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
                                 <div>
                                     <p className="text-[10px] text-gray-400">SUBMITTED</p>
                                     <p className="text-xs text-gray-700 font-medium">{form.dateSubmitted}</p>
@@ -294,7 +294,7 @@ const MyForms = () => {
                             <div className="space-y-4">
                                 {/* Form Header */}
                                 <div className="bg-purple-50 border border-purple-200 p-4 rounded-lg">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <p className="text-sm text-gray-600 mb-1">Form ID</p>
                                             <p className="text-lg font-semibold text-gray-800">{selectedForm.id}</p>
@@ -314,7 +314,7 @@ const MyForms = () => {
                                     <p className="text-xl font-bold text-gray-800">{selectedForm.formName}</p>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-sm text-gray-600 mb-1">Form Type</p>
                                         <p className="text-lg font-semibold text-gray-800">{selectedForm.formType}</p>
@@ -386,3 +386,5 @@ const MyForms = () => {
 }
 
 export default MyForms
+
+

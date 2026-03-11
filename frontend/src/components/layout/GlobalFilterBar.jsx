@@ -2,17 +2,20 @@ import React, { useState } from 'react'
 import { Calendar, MapPin, Users, Tag, ChevronDown, Filter } from 'lucide-react'
 import useAppStore from '../../store/useStore'
 import { cn } from '../../lib/utils'
-import { useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
+import { RefreshCcw } from 'lucide-react'
+import api from '../../services/api'
 
 const FilterItem = ({ label, value, icon: Icon, options, onChange }) => (
-    <div className="relative flex items-center gap-3 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl cursor-pointer hover:bg-white hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-500/5 transition-all group shrink-0">
+    <div className="relative flex items-center gap-3 px-3 md:px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl cursor-pointer hover:bg-white hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-500/5 transition-all group shrink-0 min-w-0">
         <div className="p-1.5 bg-white rounded-lg border border-slate-100 shadow-sm group-hover:border-indigo-100 transition-colors">
             <Icon className="h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
         </div>
-        <div className="flex flex-col">
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] leading-none mb-1">{label}</span>
+        <div className="flex flex-col min-w-0">
+            <span className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] leading-none mb-1">{label}</span>
             <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{value}</span>
+                <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight truncate">{value}</span>
                 <ChevronDown size={10} className="text-slate-400 group-hover:text-indigo-500 transition-colors" />
             </div>
         </div>
@@ -29,6 +32,7 @@ const FilterItem = ({ label, value, icon: Icon, options, onChange }) => (
 )
 
 const GlobalFilterBar = () => {
+    const navigate = useNavigate()
     const {
         country, setCountry,
         statusFilter, setStatusFilter,
@@ -39,21 +43,47 @@ const GlobalFilterBar = () => {
     const [localCountry, setLocalCountry] = useState(country)
     const [localStatus, setLocalStatus] = useState(statusFilter)
     const [localTeamMember, setLocalTeamMember] = useState(teamMember || 'All Operators')
-    const [localDateRange, setLocalDateRange] = useState(dateRange?.label || 'Last 30 Days')
+    const [localDateRange, setLocalDateRange] = useState(dateRange?.label || 'Last 7 Days')
+    const [isFiltering, setIsFiltering] = useState(false)
 
     const queryClient = useQueryClient()
 
+    // Fetch real countries from DB
+    const { data: leadsResp } = useQuery({
+        queryKey: ['filter-countries'],
+        queryFn: () => api.get('/leads'),
+        staleTime: 5 * 60 * 1000
+    })
+    const leadsArr = Array.isArray(leadsResp?.data) ? leadsResp.data : (Array.isArray(leadsResp) ? leadsResp : [])
+    const dbCountries = ['Global', ...new Set(leadsArr.map(l => l.country).filter(Boolean))].sort()
+
+    // Fetch real operators (users) from DB
+    const { data: usersResp } = useQuery({
+        queryKey: ['filter-operators'],
+        queryFn: () => api.get('/users'),
+        staleTime: 5 * 60 * 1000
+    })
+    const usersArr = Array.isArray(usersResp?.data) ? usersResp.data : (Array.isArray(usersResp) ? usersResp : [])
+    const dbOperators = ['All Operators', ...usersArr.map(u => u.name).filter(Boolean)]
+
     const handleApplyFilters = () => {
+        setIsFiltering(true)
         setCountry(localCountry)
         setStatusFilter(localStatus)
-        setTeamMember(localTeamMember)
+        setTeamMember(localTeamMember === 'All Operators' ? '' : localTeamMember)
         setDateRange({ label: localDateRange, from: null, to: null })
         queryClient.invalidateQueries()
+        setTimeout(() => setIsFiltering(false), 500)
     }
 
+    const leadStateOptions = [
+        'All Stages', 'New', 'Qualified', 'Converted', 'Enrolled', 'Lost',
+        'Hot Priority', 'Warm Inbound', 'Cold Prospect'
+    ]
+
     return (
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 py-5">
-            <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-1 w-full lg:w-auto">
+        <div className="flex flex-col gap-4 py-4 w-full">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <FilterItem
                     label="Chronology"
                     value={localDateRange}
@@ -65,35 +95,39 @@ const GlobalFilterBar = () => {
                     label="Territory"
                     value={localCountry}
                     icon={MapPin}
-                    options={['Global', 'India', 'USA', 'UK', 'UAE', 'Canada']}
+                    options={dbCountries.length > 1 ? dbCountries : ['Global', 'India', 'USA', 'UK', 'UAE', 'Canada']}
                     onChange={setLocalCountry}
                 />
                 <FilterItem
                     label="Lead State"
                     value={localStatus}
                     icon={Tag}
-                    options={['All Stages', 'Hot Priority', 'Warm Inbound', 'Cold Prospect']}
+                    options={leadStateOptions}
                     onChange={setLocalStatus}
                 />
                 <FilterItem
                     label="Operator"
                     value={localTeamMember}
                     icon={Users}
-                    options={['All Operators', 'John Doe', 'Sarah Johnson', 'Rahul K.']}
+                    options={dbOperators.length > 1 ? dbOperators : ['All Operators']}
                     onChange={setLocalTeamMember}
                 />
             </div>
 
-            <div className="flex items-center gap-3 shrink-0 w-full lg:w-auto justify-end">
-                <button className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 group">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-2 border-t border-slate-100/50 pt-4">
+                <button
+                    onClick={() => navigate('/analytics')}
+                    className="flex w-full sm:w-auto justify-center items-center gap-2 text-slate-500 hover:text-indigo-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 group"
+                >
                     <Filter size={14} className="group-hover:rotate-180 transition-transform duration-500" />
                     <span>Advanced Matrix</span>
                 </button>
                 <button
                     onClick={handleApplyFilters}
-                    className="bg-[#020617] text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-black transition-all shadow-xl shadow-slate-900/10 active:scale-95 ring-1 ring-slate-800"
+                    disabled={isFiltering}
+                    className="w-full sm:w-auto bg-[#020617] text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-black transition-all shadow-xl shadow-slate-900/10 active:scale-95 ring-1 ring-slate-800 focus:outline-none flex items-center justify-center gap-2 disabled:opacity-75"
                 >
-                    Apply Scopes
+                    {isFiltering ? <RefreshCcw size={14} className="animate-spin" /> : 'Apply Scopes'}
                 </button>
             </div>
         </div>

@@ -24,7 +24,7 @@ const MetricMiniCard = ({ label, value, color }) => (
 )
 
 const CountryAnalytics = () => {
-    const { useCountryAnalytics, refreshData } = useManagerActions()
+    const { useCountryAnalytics, exportCsv, refreshData } = useManagerActions()
     const { data: analytics, isLoading } = useCountryAnalytics()
     const [searchCountry, setSearchCountry] = useState('')
     const [selectedCountry, setSelectedCountry] = useState(null)
@@ -175,7 +175,7 @@ const CountryAnalytics = () => {
                                         </button>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <MetricMiniCard label="Territory Conversion" value={selectedCountry.conversion} color="text-indigo-600" />
                                         <MetricMiniCard label="Qualified Rank" value="#04 Global" color="text-emerald-600" />
                                     </div>
@@ -204,7 +204,12 @@ const CountryAnalytics = () => {
                                         </div>
                                     </div>
 
-                                    <button className="w-full bg-white text-black py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-indigo-500 hover:text-white transition-all shadow-xl">
+                                    <button 
+                                        onClick={() => exportCsv.mutate('territory')}
+                                        disabled={exportCsv.isPending}
+                                        className="w-full bg-white text-black py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-indigo-500 hover:text-white transition-all shadow-xl disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        {exportCsv.isPending ? <RefreshCcw size={14} className="animate-spin" /> : null}
                                         Extract Territory Dataset
                                     </button>
                                 </div>
@@ -218,3 +223,5 @@ const CountryAnalytics = () => {
 }
 
 export default CountryAnalytics
+
+

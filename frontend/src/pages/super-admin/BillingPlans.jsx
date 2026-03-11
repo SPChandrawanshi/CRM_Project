@@ -4,7 +4,7 @@ import { cn } from '../../lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { useBillingActions } from '../../hooks/useCrmMutations'
 import { motion, AnimatePresence } from 'framer-motion'
-import apiClient from '../../lib/apiClient'
+import api from '../../services/api'
 
 const AddPlanModal = ({ isOpen, onClose, onAdd }) => {
     const [formData, setFormData] = useState({ name: '', price: '', channelLimit: '', userLimit: '', cycle: 'Monthly' });
@@ -12,7 +12,7 @@ const AddPlanModal = ({ isOpen, onClose, onAdd }) => {
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl">
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                 <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                     <div>
                         <h3 className="text-xl font-black text-[#111827] uppercase tracking-tight">Define Global Plan</h3>
@@ -133,10 +133,10 @@ const UpgradeModal = ({ subscription, isOpen, onClose, onUpgrade }) => {
     );
 }
 
-const InvoiceDrawer = ({ isOpen, onClose, subscription, downloadInvoice }) => {
+const InvoiceDrawer = ({ isOpen, onClose, subscription, downloadInvoice, updatePaymentMethod }) => {
     const { data: invoicesResp, isLoading: loadingInvoices } = useQuery({
         queryKey: ['invoices', subscription?.id],
-        queryFn: () => apiClient.get(`/billing/invoice/${subscription.id}`),
+        queryFn: () => api.get(`/billing/invoice/${subscription.id}`),
         enabled: isOpen && !!subscription?.id
     })
     const invoices = Array.isArray(invoicesResp?.data) ? invoicesResp.data : []
@@ -194,8 +194,13 @@ const InvoiceDrawer = ({ isOpen, onClose, subscription, downloadInvoice }) => {
                             ))}
                         </div>
                         <div className="p-8 border-t border-gray-100 bg-gray-50/30">
-                            <button className="w-full py-4 bg-[#111827] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all shadow">
-                                <CreditCard size={16} /> Manage Payment Method
+                            <button 
+                                onClick={() => updatePaymentMethod?.mutate(subscription?.id)}
+                                disabled={updatePaymentMethod?.isPending}
+                                className="w-full py-4 bg-[#111827] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all shadow disabled:opacity-50"
+                            >
+                                {updatePaymentMethod?.isPending ? <RefreshCcw size={16} className="animate-spin" /> : <CreditCard size={16} />} 
+                                Manage Payment Method
                             </button>
                         </div>
                     </motion.div>
@@ -206,7 +211,7 @@ const InvoiceDrawer = ({ isOpen, onClose, subscription, downloadInvoice }) => {
 }
 
 const BillingPlans = () => {
-    const { upgradePlan, suspendClient, addPlan, downloadInvoice } = useBillingActions()
+    const { upgradePlan, suspendClient, addPlan, downloadInvoice, updatePaymentMethod } = useBillingActions()
     const [searchTerm, setSearchTerm] = useState('')
     const [statusFilter, setStatusFilter] = useState('All Status')
 
@@ -217,7 +222,7 @@ const BillingPlans = () => {
     const { data: subscriptions = [], isLoading } = useQuery({
         queryKey: ['subscriptions'],
         queryFn: async () => {
-            const res = await apiClient.get('/billing');
+            const res = await api.get('/billing');
             const dataToMap = Array.isArray(res.data?.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
             return dataToMap.map(sub => ({
                 id: sub.id,
@@ -266,7 +271,7 @@ const BillingPlans = () => {
                 </div>
                 <button
                     onClick={() => setIsAddModalOpen(true)}
-                    className="bg-[#111827] text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black flex items-center gap-3 shadow transition-all active:scale-95"
+                    className="w-full sm:w-auto px-8 py-4 bg-[#111827] text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black flex items-center justify-center gap-3 shadow transition-all active:scale-95"
                 >
                     <PlusCircle size={18} strokeWidth={2.5} />
                     New Global Tier
@@ -274,7 +279,7 @@ const BillingPlans = () => {
             </div>
 
             <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] shadow-sm overflow-hidden min-h-[500px] flex flex-col">
-                <div className="p-8 border-b border-[#E5E7EB] flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gray-50/50">
+                <div className="p-4 md:p-8 border-b border-[#E5E7EB] flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-gray-50/50">
                     <div className="flex items-center gap-4 flex-1">
                         <div className="relative w-full max-w-sm">
                             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
@@ -309,57 +314,67 @@ const BillingPlans = () => {
                     <table className="w-full text-left border-collapse min-w-[1000px]">
                         <thead>
                             <tr className="bg-[#F9FAFB]/50">
-                                <th className="px-10 py-6 font-black text-gray-400 uppercase tracking-widest text-[9px]">Client / Current Plan</th>
-                                <th className="px-10 py-6 font-black text-gray-400 uppercase tracking-widest text-[9px]">Usage (Messages/Contacts)</th>
-                                <th className="px-10 py-6 font-black text-gray-400 uppercase tracking-widest text-[9px]">Renewal Date</th>
-                                <th className="px-10 py-6 text-right font-black text-gray-400 uppercase tracking-widest text-[9px]">Actions</th>
+                                <th className="px-4 sm:px-10 py-6 font-black text-gray-400 uppercase tracking-widest text-[9px]">Client / Current Plan</th>
+                                <th className="px-4 sm:px-10 py-6 font-black text-gray-400 uppercase tracking-widest text-[9px]">Usage Metrics</th>
+                                <th className="px-4 sm:px-10 py-6 font-black text-gray-400 uppercase tracking-widest text-[9px]">Renewal Date</th>
+                                <th className="px-4 sm:px-10 py-6 text-right font-black text-gray-400 uppercase tracking-widest text-[9px]">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#E5E7EB]/50">
                             <AnimatePresence mode='popLayout'>
                                 {filteredSubscriptions.map((sub) => (
                                     <motion.tr layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.98 }} key={sub.id} className="transition-all cursor-pointer hover:bg-gray-50/50 group">
-                                        <td className="px-10 py-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600">
+                                        <td className="px-4 sm:px-10 py-6">
+                                            <div className="flex items-center gap-3 sm:gap-4">
+                                                <div className="p-2.5 sm:p-3 bg-indigo-50 rounded-2xl text-indigo-600 shrink-0">
                                                     <CreditCard size={18} />
                                                 </div>
-                                                <div>
-                                                    <div className="font-black text-sm text-[#111827] uppercase tracking-tight">{sub.client}</div>
+                                                <div className="min-w-0">
+                                                    <div className="font-black text-sm text-[#111827] uppercase tracking-tight truncate">{sub.client}</div>
                                                     <div className="flex items-center gap-2 mt-0.5">
-                                                        <div className={cn("w-1.5 h-1.5 rounded-full", sub.status === 'Active' ? 'bg-emerald-500' : 'bg-rose-500')} />
-                                                        <div className="text-[10px] text-indigo-500 font-bold uppercase tracking-widest">{sub.plan}</div>
+                                                        <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", sub.status === 'Active' ? 'bg-emerald-500' : 'bg-rose-500')} />
+                                                        <div className="text-[10px] text-indigo-500 font-bold uppercase tracking-widest truncate">{sub.plan}</div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-10 py-6">
+                                        <td className="px-4 sm:px-10 py-6">
                                             <div className="flex flex-col gap-1.5">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-black text-[#111827]">{sub.usage.messages.toLocaleString()}</span>
-                                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Messages</span>
+                                                    <div className="w-16 sm:w-auto text-right sm:text-left">
+                                                        <span className="text-xs font-black text-[#111827]">{sub.usage.messages.toLocaleString()}</span>
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">MSG</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-black text-[#111827]">{sub.usage.contacts.toLocaleString()}</span>
-                                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Contacts</span>
+                                                    <div className="w-16 sm:w-auto text-right sm:text-left">
+                                                        <span className="text-xs font-black text-[#111827]">{sub.usage.contacts.toLocaleString()}</span>
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">CON</span>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-10 py-6">
-                                            <div className="flex items-center gap-2">
+                                        <td className="px-4 sm:px-10 py-6">
+                                            <div className="flex items-center gap-2 whitespace-nowrap">
                                                 <Calendar size={14} className={cn(sub.status === 'Expired' ? 'text-rose-400' : 'text-gray-400')} />
-                                                <span className={cn("text-[11px] font-black uppercase tracking-tight", sub.status === 'Expired' ? 'text-rose-600' : 'text-[#111827]')}>
+                                                <span className={cn("text-[10px] sm:text-[11px] font-black uppercase tracking-tight", sub.status === 'Expired' ? 'text-rose-600' : 'text-[#111827]')}>
                                                     {sub.renewalDate}
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-10 py-6 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button onClick={() => setSelectedSubscription(sub)} className="px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-sm">
-                                                    <ArrowUpCircle size={14} strokeWidth={2.5} /> Upgrade Plan
+                                        <td className="px-4 sm:px-10 py-6 text-right">
+                                            <div className="flex flex-col sm:flex-row items-end sm:items-center justify-end gap-2">
+                                                <button 
+                                                    onClick={() => setSelectedSubscription(sub)} 
+                                                    className="w-full sm:w-auto px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm whitespace-nowrap"
+                                                >
+                                                    <ArrowUpCircle size={14} strokeWidth={2.5} /> Upgrade
                                                 </button>
-                                                <button onClick={() => setViewingInvoicesFor(sub)} className="px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-sm">
-                                                    <Download size={14} strokeWidth={2.5} /> Download Invoice
+                                                <button 
+                                                    onClick={() => setViewingInvoicesFor(sub)} 
+                                                    className="w-full sm:w-auto px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm whitespace-nowrap"
+                                                >
+                                                    <Download size={14} strokeWidth={2.5} /> Invoice
                                                 </button>
                                             </div>
                                         </td>
@@ -383,9 +398,13 @@ const BillingPlans = () => {
                 onClose={() => setViewingInvoicesFor(null)}
                 subscription={viewingInvoicesFor}
                 downloadInvoice={downloadInvoice}
+                updatePaymentMethod={updatePaymentMethod}
             />
         </div>
     )
 }
 
 export default BillingPlans
+
+
+

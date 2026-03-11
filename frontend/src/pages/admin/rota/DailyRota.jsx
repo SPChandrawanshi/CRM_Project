@@ -1,9 +1,11 @@
 // Admin - Daily Rota Page
 import { useState } from 'react'
 import { FaCalendarDay, FaEdit, FaTrash, FaEye, FaPlus } from 'react-icons/fa'
+import { useAdminActions } from '../../../hooks/useCrmMutations'
 
 const DailyRota = () => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+    const { executeAction } = useAdminActions()
 
     const rotaData = [
         { id: 1, teamMember: 'John Doe', serviceUser: 'Client A', time: '09:00 - 11:00', location: '123 Main St', status: 'Scheduled' },
@@ -31,8 +33,9 @@ const DailyRota = () => {
                     <p className="text-gray-600">View and manage today's schedule</p>
                 </div>
                 <button
-                    onClick={() => alert('Add shift functionality coming soon!')}
-                    className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all"
+                    onClick={() => executeAction.mutate('add_shift')}
+                    disabled={executeAction.isPending}
+                    className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
                 >
                     <FaPlus />
                     Add Shift
@@ -84,20 +87,23 @@ const DailyRota = () => {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
                                             <button
-                                                onClick={() => alert('Viewing rota details...')}
-                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                onClick={() => executeAction.mutate('view_rota_details')}
+                                                disabled={executeAction.isPending}
+                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
                                             >
                                                 <FaEye />
                                             </button>
                                             <button
-                                                onClick={() => alert('Editing rota...')}
-                                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                onClick={() => executeAction.mutate('edit_rota')}
+                                                disabled={executeAction.isPending}
+                                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
                                             >
                                                 <FaEdit />
                                             </button>
                                             <button
-                                                onClick={() => alert('Deleting rota...')}
-                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                onClick={() => executeAction.mutate('delete_rota')}
+                                                disabled={executeAction.isPending}
+                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                                             >
                                                 <FaTrash />
                                             </button>
@@ -137,20 +143,23 @@ const DailyRota = () => {
 
                             <div className="flex justify-end gap-3 pt-2 border-t border-gray-50">
                                 <button
-                                    onClick={() => alert('Viewing rota details...')}
-                                    className="flex-1 flex items-center justify-center gap-2 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-sm font-medium"
+                                    onClick={() => executeAction.mutate('view_rota_details')}
+                                    disabled={executeAction.isPending}
+                                    className="flex-1 flex items-center justify-center gap-2 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
                                 >
                                     <FaEye /> View
                                 </button>
                                 <button
-                                    onClick={() => alert('Editing rota...')}
-                                    className="flex-1 flex items-center justify-center gap-2 py-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors text-sm font-medium"
+                                    onClick={() => executeAction.mutate('edit_rota')}
+                                    disabled={executeAction.isPending}
+                                    className="flex-1 flex items-center justify-center gap-2 py-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
                                 >
                                     <FaEdit /> Edit
                                 </button>
                                 <button
-                                    onClick={() => alert('Deleting rota...')}
-                                    className="flex-1 flex items-center justify-center gap-2 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors text-sm font-medium"
+                                    onClick={() => executeAction.mutate('delete_rota')}
+                                    disabled={executeAction.isPending}
+                                    className="flex-1 flex items-center justify-center gap-2 py-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
                                 >
                                     <FaTrash /> Delete
                                 </button>
@@ -164,3 +173,5 @@ const DailyRota = () => {
 }
 
 export default DailyRota
+
+

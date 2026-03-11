@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { Clock, Calendar, ShieldCheck, ToggleLeft, ToggleRight, Save, Sparkles, Coffee, Moon, Sun } from 'lucide-react'
 import { cn } from '../lib/utils'
-import { useShiftActions } from '../hooks/useCrmMutations'
+import { useShiftActions, useAdminActions } from '../hooks/useCrmMutations'
 import { useQuery } from '@tanstack/react-query'
-import apiClient from '../lib/apiClient'
+import api from '../services/api'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const DayRow = React.forwardRef(({ day, active, start, end, onToggle, onStartChange, onEndChange }, ref) => (
@@ -76,10 +76,11 @@ const WorkingHours = () => {
     ])
 
     const { saveHours } = useShiftActions()
+    const { executeAction } = useAdminActions()
 
     const { data: serverHours } = useQuery({
         queryKey: ['working-hours'],
-        queryFn: () => apiClient.get('/admin/working-hours')
+        queryFn: () => api.get('/admin/working-hours')
     })
 
     React.useEffect(() => {
@@ -141,7 +142,10 @@ const WorkingHours = () => {
                             <ShieldCheck className="text-emerald-400 mb-6 group-hover:scale-110 transition-transform" size={40} />
                             <h3 className="font-black text-lg mb-3 uppercase tracking-tight">Overflow Intelligence</h3>
                             <p className="text-[10px] text-gray-400 mb-8 leading-relaxed font-bold uppercase tracking-widest opacity-80">Leads received outside active windows are automatically staged for the next operational cycle.</p>
-                            <button className="w-full bg-white/5 hover:bg-white/10 border border-white/10 py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all hover:border-indigo-500/50">
+                            <button 
+                                onClick={() => executeAction.mutate('CONFIGURE_GLOBAL_QUEUE')}
+                                className="w-full bg-white/5 hover:bg-white/10 border border-white/10 py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all hover:border-indigo-500/50"
+                            >
                                 Configure Global Queue
                             </button>
                         </div>
@@ -156,7 +160,10 @@ const WorkingHours = () => {
                             <h3 className="font-black text-[#111827] text-xs uppercase tracking-widest">Holiday Mode</h3>
                         </div>
                         <p className="text-[10px] text-[#6B7280] mb-6 font-bold uppercase tracking-widest opacity-70">Instantly suspend all autonomous assignments across global territories.</p>
-                        <button className="w-full border border-gray-100 bg-gray-50/50 hover:bg-white py-4 rounded-2xl text-[9px] font-black text-[#111827] uppercase tracking-widest transition-all hover:border-rose-100 hover:text-rose-600">
+                        <button 
+                            onClick={() => executeAction.mutate('DEPLOY_HOLIDAY_PROTOCOL')}
+                            className="w-full border border-gray-100 bg-gray-50/50 hover:bg-white py-4 rounded-2xl text-[9px] font-black text-[#111827] uppercase tracking-widest transition-all hover:border-rose-100 hover:text-rose-600"
+                        >
                             Deploy Holiday Protocol
                         </button>
                     </div>
@@ -182,3 +189,5 @@ const WorkingHours = () => {
 }
 
 export default WorkingHours
+
+

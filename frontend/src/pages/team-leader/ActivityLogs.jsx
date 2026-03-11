@@ -31,12 +31,20 @@ const ActivityLogs = () => {
     )
 
     const activityLogs = logs?.data || []
-    const filteredLogs = activityLogs.filter(log =>
-        log.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.lead.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.note.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    const filteredLogs = activityLogs.filter(log => {
+        const user = typeof log.user === 'string' ? log.user : (log.user?.name || 'Unknown')
+        const action = log.action || ''
+        const lead = log.lead || 'General'
+        const note = log.note || log.details || ''
+
+        return user.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            action.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            lead.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            note.toLowerCase().includes(searchQuery.toLowerCase())
+    })
+
+    const getDisplayUser = (log) => typeof log.user === 'string' ? log.user : (log.user?.name || 'Unknown')
+    const getDisplayDate = (log) => log.date || (log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Recent')
 
     const handleSaveNote = () => {
         if (!noteText.trim()) return
@@ -64,10 +72,14 @@ const ActivityLogs = () => {
                         <span className="text-[10px] font-black text-[#111827] uppercase tracking-widest">Sort: Newest First</span>
                     </div>
                     <button
-                        onClick={() => refreshData.mutate('activityLogs')}
+                        onClick={() => {
+                            if (typeof refreshData.mutate === 'function') {
+                                refreshData.mutate('activityLogs')
+                            }
+                        }}
                         className="p-2.5 border border-[#E5E7EB] rounded-xl text-gray-500 bg-gray-50 hover:bg-gray-100 hover:text-[#111827] transition-all shadow-sm active:scale-95 flex items-center gap-2"
                     >
-                        <RefreshCcw size={16} className={refreshData.isPending ? "animate-spin" : ""} />
+                        <RefreshCcw size={16} className={refreshData?.isPending ? "animate-spin" : ""} />
                     </button>
                     <button
                         onClick={() => setNoteModalOpen(true)}
@@ -111,21 +123,21 @@ const ActivityLogs = () => {
                                     <td className="px-8 py-6">
                                         <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 uppercase">
                                             <Clock size={12} className="text-gray-400" />
-                                            {log.date}
+                                            {getDisplayDate(log)}
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">
                                         <div className="flex items-center gap-2">
-                                            {log.user === 'Team Leader' ? (
+                                            {getDisplayUser(log) === 'Team Leader' ? (
                                                 <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center text-[8px] font-black text-indigo-600">
                                                     TL
                                                 </div>
                                             ) : (
                                                 <div className="w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center text-[8px] font-black text-gray-500">
-                                                    {log.user.charAt(0)}
+                                                    {getDisplayUser(log).charAt(0)}
                                                 </div>
                                             )}
-                                            <span className="text-[10px] font-black text-[#111827] uppercase">{log.user}</span>
+                                            <span className="text-[10px] font-black text-[#111827] uppercase">{getDisplayUser(log)}</span>
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">
@@ -144,7 +156,7 @@ const ActivityLogs = () => {
                                     <td className="px-8 py-6 max-w-md">
                                         <div className="flex gap-2 items-start text-gray-600">
                                             <MessageSquare size={14} className="mt-0.5 text-gray-400 shrink-0" />
-                                            <p className="text-[11px] leading-relaxed">{log.note}</p>
+                                            <p className="text-[11px] leading-relaxed">{log.note || log.details}</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -173,7 +185,7 @@ const ActivityLogs = () => {
                             initial={{ opacity: 0, scale: 0.95, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                            className="bg-white rounded-[2rem] w-full max-w-lg relative z-10 shadow-2xl p-8 space-y-6"
+                            className="bg-white rounded-[2rem] w-full max-w-lg relative z-10 shadow-2xl p-8 space-y-6 mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar"
                         >
                             <div className="flex items-start justify-between">
                                 <div className="space-y-1">
@@ -239,3 +251,5 @@ const ActivityLogs = () => {
 }
 
 export default ActivityLogs
+
+

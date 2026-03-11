@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { useCounselorActions } from '../hooks/useCrmMutations'
-import apiClient from '../lib/apiClient'
+import api from '../services/api'
 
 const CallLogging = () => {
     const { logCall } = useCounselorActions()
@@ -16,7 +16,7 @@ const CallLogging = () => {
 
     const { data: callsResp, isLoading } = useQuery({
         queryKey: ['counselor-calls'],
-        queryFn: () => apiClient.get('/counselor/calls')
+        queryFn: () => api.get('/counselor/calls')
     })
 
     const callsData = Array.isArray(callsResp?.data) ? callsResp.data : (Array.isArray(callsResp) ? callsResp : [])
@@ -86,7 +86,7 @@ const CallLogging = () => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto min-h-[400px]">
+                <div className="w-full overflow-x-auto no-scrollbar min-h-[400px]">
                     {isLoading ? (
                         <div className="h-64 flex flex-col items-center justify-center text-indigo-600 opacity-50">
                             <Loader className="animate-spin mb-4" size={32} />
@@ -193,7 +193,7 @@ const CallLogging = () => {
                                             className="w-full p-3 border border-gray-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
                                         />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Direction</label>
                                             <select
@@ -265,3 +265,5 @@ const CallLogging = () => {
 }
 
 export default CallLogging
+
+

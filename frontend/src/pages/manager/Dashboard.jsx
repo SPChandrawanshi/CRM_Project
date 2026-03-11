@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Users,
@@ -53,6 +54,7 @@ const ManagerDashboard = () => {
     const { useDashboard, refreshData } = useManagerActions()
     const { data: dashboard, isLoading } = useDashboard()
     const [searchQuery, setSearchQuery] = useState('')
+    const navigate = useNavigate()
 
     if (isLoading) return (
         <div className="h-96 flex items-center justify-center">
@@ -157,7 +159,10 @@ const ManagerDashboard = () => {
                                 ))}
                             </tbody>
                         </table>
-                        <button className="w-full py-4 bg-gray-50/50 text-[9px] font-black text-gray-400 hover:text-indigo-600 uppercase tracking-[0.2em] transition-all border-t border-gray-100">
+                        <button 
+                            onClick={() => navigate('/manager/funnel')}
+                            className="w-full py-4 bg-gray-50/50 text-[9px] font-black text-gray-400 hover:text-indigo-600 uppercase tracking-[0.2em] transition-all border-t border-gray-100"
+                        >
                             Drill Down Into Funnel Logistics
                         </button>
                     </div>
@@ -222,7 +227,10 @@ const ManagerDashboard = () => {
                                             </div>
                                         </td>
                                         <td className="px-8 py-6 text-right">
-                                            <button className="w-8 h-8 shrink-0 rounded-full bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shadow-sm transition-all hover:bg-indigo-100 hover:scale-110">
+                                            <button 
+                                                onClick={() => navigate('/manager/country')}
+                                                className="w-8 h-8 shrink-0 rounded-full bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shadow-sm transition-all hover:bg-indigo-100 hover:scale-110"
+                                            >
                                                 <ChevronRight size={14} />
                                             </button>
                                         </td>
@@ -238,3 +246,5 @@ const ManagerDashboard = () => {
 }
 
 export default ManagerDashboard
+
+

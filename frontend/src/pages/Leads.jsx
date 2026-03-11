@@ -26,7 +26,7 @@ import { cn } from '../lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { useLeadActions } from '../hooks/useCrmMutations'
 import { motion, AnimatePresence } from 'framer-motion'
-import apiClient from '../lib/apiClient'
+import api from '../services/api'
 import useAppStore from '../store/useStore'
 
 const Leads = () => {
@@ -42,18 +42,21 @@ const Leads = () => {
     const { country, statusFilter, dateRange, searchTerm } = useAppStore()
     const { data: resp, isLoading } = useQuery({
         queryKey: ['leads', country, statusFilter, dateRange, searchTerm],
-        queryFn: () => apiClient.get('/leads', {
+        queryFn: () => api.get('/leads', {
             params: { country, status: statusFilter, dateRange: dateRange.label, search: searchTerm }
         })
     })
 
     const { data: usersResp } = useQuery({
         queryKey: ['users-assignable'],
-        queryFn: () => apiClient.get('/users').then(res => res.data.filter(u => ['COUNSELOR', 'TEAM_LEADER', 'MANAGER'].includes(u.role)))
+        queryFn: () => api.get('/users').then(res => res.data.filter(u => ['COUNSELOR', 'TEAM_LEADER', 'MANAGER'].includes(u.role)))
     })
 
-    const leads = resp?.data || []
+    const leads = Array.isArray(resp?.data) ? resp.data : (Array.isArray(resp) ? resp : [])
     const users = usersResp || []
+
+    console.log('[Leads Debug] Raw response:', resp);
+    console.log('[Leads Debug] Processed leads:', leads);
 
 
     const columns = useMemo(() => [
@@ -122,16 +125,19 @@ const Leads = () => {
             )
         },
         {
-            accessorKey: 'assignedTo',
+            accessorKey: 'handlerName',
             header: () => <span className="uppercase tracking-[0.1em]">Custodian</span>,
-            cell: ({ getValue }) => (
-                <div className="flex items-center gap-2">
-                    <div className="h-5 w-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[8px] font-black text-slate-500 uppercase">
-                        {getValue()?.charAt(0)}
+            cell: ({ getValue }) => {
+                const name = getValue() || 'Unassigned';
+                return (
+                    <div className="flex items-center gap-2">
+                        <div className="h-5 w-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[8px] font-black text-slate-500 uppercase">
+                            {name.charAt(0)}
+                        </div>
+                        <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{name}</span>
                     </div>
-                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{getValue()}</span>
-                </div>
-            )
+                )
+            }
         },
         {
             accessorKey: 'createdAt',
@@ -187,6 +193,7 @@ const Leads = () => {
         data: leads,
         columns,
         state: { sorting, globalFilter },
+        initialState: { pagination: { pageSize: 50 } },
         onSortingChange: setSorting,
         onGlobalFilterChange: setGlobalFilter,
         getCoreRowModel: getCoreRowModel(),
@@ -210,41 +217,40 @@ const Leads = () => {
     return (
         <div className="space-y-10 pb-20">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-                <div>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-8">
+                <div className="space-y-1">
                     <div className="flex items-center gap-3 mb-2">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                        <span className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.3em]">Live Lead Feed</span>
+                        <span className="text-[9px] md:text-[10px] font-black text-emerald-600 uppercase tracking-[0.3em]">Live Lead Feed</span>
                     </div>
-                    <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase">Intelligence</h1>
-                    <p className="text-sm font-medium text-slate-500 mt-2 max-w-xl">
-                        Total <span className="text-slate-900 font-black">{leads.length}</span> nodes identified in current operational cycle.
+                    <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none">Intelligence</h1>
+                    <p className="text-[10px] md:text-sm font-medium text-slate-500 mt-2 max-w-xl">
+                        Total <span className="text-slate-900 font-black">{leads.length}</span> nodes identified.
                     </p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 md:gap-4">
                     <button 
                         onClick={() => exportLeads.mutate()}
                         disabled={exportLeads.isPending}
-                        className="h-14 flex items-center gap-4 bg-white border border-slate-200 text-slate-900 px-8 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 shadow-sm"
+                        className="h-12 md:h-14 flex-1 md:flex-none flex items-center justify-center gap-2 md:gap-4 bg-white border border-slate-200 text-slate-900 px-4 md:px-8 rounded-2xl font-black text-[9px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.2em] hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
                     >
                         <Download className="h-4 w-4 text-slate-400" />
-                        <span>Export Data</span>
+                        <span>Export</span>
                     </button>
                     <button 
                         onClick={() => setIsAddModalOpen(true)}
-                        className="h-14 bg-[#020617] text-white px-10 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-black transition-all shadow-2xl shadow-slate-900/20 active:scale-95 flex items-center gap-4 ring-1 ring-slate-800"
+                        className="h-12 md:h-14 flex-1 md:flex-none flex items-center justify-center gap-2 md:gap-4 bg-[#020617] text-white px-4 md:px-10 rounded-2xl font-black text-[9px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.2em] hover:bg-black transition-all shadow-2xl active:scale-95"
                     >
                         <Plus className="h-4 w-4" />
-                        <span>Manual Node</span>
+                        <span>Add Node</span>
                     </button>
-
                 </div>
             </div>
 
             {/* Main Table Container */}
             <div className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden flex flex-col">
                 {/* Search & Utility Bar */}
-                <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-50/30">
+                <div className="p-4 md:p-8 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-50/30">
                     <div className="relative flex-1 max-w-md group">
                         <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-indigo-500 transition-colors" />
                         <input
@@ -263,9 +269,9 @@ const Leads = () => {
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="overflow-x-auto no-scrollbar">
-                    <table className="w-full text-left border-collapse">
+                {/* Table with Horizontal Scrollbox */}
+                <div className="overflow-x-auto w-full custom-scrollbar">
+                    <table className="w-full text-left border-collapse min-w-[1000px] md:min-w-full">
                         <thead>
                             <tr className="bg-slate-50/50">
                                 {table.getHeaderGroups().map(headerGroup => (
@@ -273,7 +279,7 @@ const Leads = () => {
                                         {headerGroup.headers.map(header => (
                                             <th
                                                 key={header.id}
-                                                className="px-8 py-6 font-black text-slate-400 text-[10px] uppercase tracking-[0.2em] border-b border-slate-100"
+                                                className="px-2 md:px-8 py-4 md:py-6 font-black text-slate-400 text-[9px] md:text-[10px] uppercase tracking-[0.2em] border-b border-slate-100"
                                             >
                                                 {header.isPlaceholder
                                                     ? null
@@ -305,7 +311,7 @@ const Leads = () => {
                                         className="group hover:bg-slate-50/50 transition-all"
                                     >
                                         {row.getVisibleCells().map(cell => (
-                                            <td key={cell.id} className="px-8 py-8 transition-all">
+                                            <td key={cell.id} className="px-2 md:px-8 py-4 md:py-8 transition-all">
                                                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                             </td>
                                         ))}
@@ -329,7 +335,7 @@ const Leads = () => {
                 </div>
 
                 {/* Pagination */}
-                <div className="p-8 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-6 bg-slate-50/30">
+                <div className="p-4 md:p-8 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-6 bg-slate-50/30">
                     <div className="flex items-center gap-3">
                         <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.25em]">
@@ -382,7 +388,7 @@ const Leads = () => {
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="bg-white rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl border border-slate-100"
+                            className="bg-white rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl border border-slate-100 mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar"
                         >
                             <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
                                 <div>
@@ -400,7 +406,7 @@ const Leads = () => {
                                     onSuccess: () => setIsAddModalOpen(false)
                                 })
                             }} className="p-8 space-y-6">
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-1">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Lead Identity</label>
                                         <input name="name" required placeholder="Full Name" className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-200 outline-none transition-all shadow-inner" />
@@ -410,17 +416,49 @@ const Leads = () => {
                                         <input name="email" type="email" required placeholder="email@address.com" className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-200 outline-none transition-all shadow-inner" />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-1">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Territory</label>
-                                        <input name="country" required placeholder="Country" className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-200 outline-none transition-all shadow-inner" />
+                                        <input 
+                                            name="country" 
+                                            required 
+                                            placeholder="Country" 
+                                            defaultValue={country !== 'Global' ? country : ''}
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-200 outline-none transition-all shadow-inner" 
+                                        />
                                     </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Lead Stage</label>
+                                        <select 
+                                            name="stage" 
+                                            defaultValue={statusFilter !== 'All Stages' ? statusFilter : 'New'}
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-200 outline-none transition-all shadow-inner appearance-none"
+                                        >
+                                            {['New', 'Contacted', 'Qualified', 'Converted', 'Lost'].map(s => (
+                                                <option key={s} value={s}>{s}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-1">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Operational Team</label>
                                         <input name="team" defaultValue="General" className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-200 outline-none transition-all shadow-inner" />
                                     </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Priority</label>
+                                        <select 
+                                            name="priority" 
+                                            defaultValue="Medium"
+                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-xs font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-200 outline-none transition-all shadow-inner appearance-none"
+                                        >
+                                            <option value="Low">Low</option>
+                                            <option value="Medium">Medium</option>
+                                            <option value="High">High</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 mt-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
                                     <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all">Abort</button>
                                     <button 
                                         type="submit" 
@@ -443,7 +481,7 @@ const Leads = () => {
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl border border-slate-100"
+                            className="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl border border-slate-100 mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar"
                         >
                             <div className="p-8 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
                                 <div>
@@ -495,4 +533,6 @@ const Leads = () => {
 }
 
 export default Leads
+
+
 

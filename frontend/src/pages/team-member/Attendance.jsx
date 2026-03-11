@@ -113,7 +113,7 @@ const TeamMemberAttendance = () => {
                                         <p className="text-xs text-teal-600 mt-1">{activeVisit.visitType}</p>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 mt-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                                     <div className="p-3 bg-white rounded-xl shadow-sm border border-teal-100 text-center">
                                         <p className="text-[10px] text-gray-500 uppercase font-bold">Checked In At</p>
                                         <p className="text-lg font-bold text-teal-600">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
@@ -186,3 +186,5 @@ const TeamMemberAttendance = () => {
 }
 
 export default TeamMemberAttendance
+
+

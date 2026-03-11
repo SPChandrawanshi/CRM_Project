@@ -154,7 +154,7 @@ const CommunicationLog = () => {
             {/* View Message Modal */}
             {showViewModal && selectedMessage && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-cyan-500 to-teal-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Message Details</h2>
                             <button onClick={() => setShowViewModal(false)} className="text-white hover:text-gray-200">
@@ -163,7 +163,7 @@ const CommunicationLog = () => {
                         </div>
                         <div className="p-6">
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-sm text-gray-600 mb-1">Message ID</p>
                                         <p className="text-lg font-semibold text-gray-800">{selectedMessage.id}</p>
@@ -253,7 +253,7 @@ const CommunicationLog = () => {
             {/* New Message Modal */}
             {showNewMessageModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-cyan-500 to-teal-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Send New Message</h2>
                             <button onClick={() => setShowNewMessageModal(false)} className="text-white hover:text-gray-200">
@@ -332,3 +332,5 @@ const CommunicationLog = () => {
 }
 
 export default CommunicationLog
+
+

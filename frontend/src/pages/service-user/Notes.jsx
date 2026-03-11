@@ -168,7 +168,7 @@ const Notes = () => {
             {/* View Note Details Modal */}
             {showViewModal && selectedNote && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-cyan-500 to-teal-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Care Note Details</h2>
                             <button onClick={() => setShowViewModal(false)} className="text-white hover:text-gray-200">
@@ -177,7 +177,7 @@ const Notes = () => {
                         </div>
                         <div className="p-6">
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-sm text-gray-600 mb-1">Note ID</p>
                                         <p className="text-lg font-semibold text-gray-800">{selectedNote.id}</p>
@@ -237,7 +237,7 @@ const Notes = () => {
             {/* Add Feedback Modal */}
             {showFeedbackModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-cyan-500 to-teal-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Add Feedback</h2>
                             <button onClick={() => setShowFeedbackModal(false)} className="text-white hover:text-gray-200">
@@ -297,3 +297,5 @@ const Notes = () => {
 }
 
 export default Notes
+
+

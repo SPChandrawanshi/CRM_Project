@@ -1,6 +1,7 @@
 // Team Member - Communication Log Page
 import { useState } from 'react'
 import { FaPlus, FaEye, FaTimes, FaFileUpload, FaExclamationTriangle } from 'react-icons/fa'
+import { toast } from '../../components/ui/Toast'
 
 const CommunicationLog = () => {
     const [activeTab, setActiveTab] = useState('notes')
@@ -170,7 +171,7 @@ const CommunicationLog = () => {
             {/* Add Note Modal */}
             {showAddNoteModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Add New Note</h2>
                             <button onClick={() => setShowAddNoteModal(false)} className="text-white hover:text-gray-200">
@@ -224,7 +225,7 @@ const CommunicationLog = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        alert('Note added successfully!')
+                                        toast.success('Note added successfully!')
                                         setShowAddNoteModal(false)
                                     }}
                                     className="flex-1 px-6 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:shadow-lg"
@@ -307,7 +308,7 @@ const CommunicationLog = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        alert('Incident reported successfully!')
+                                        toast.success('Incident reported successfully!')
                                         setShowIncidentModal(false)
                                     }}
                                     className="flex-1 px-6 py-2.5 bg-gradient-to-r from-red-500 to-orange-600 text-white rounded-lg hover:shadow-lg"
@@ -323,7 +324,7 @@ const CommunicationLog = () => {
             {/* View Log Modal */}
             {showViewModal && selectedLog && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Log Details</h2>
                             <button onClick={() => setShowViewModal(false)} className="text-white hover:text-gray-200">
@@ -380,3 +381,5 @@ const CommunicationLog = () => {
 }
 
 export default CommunicationLog
+
+

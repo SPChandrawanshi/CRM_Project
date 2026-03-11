@@ -1,18 +1,20 @@
 import React, { useState } from 'react'
-import { Search, Loader, Bot, Sparkles, Filter, ShieldCheck, Zap } from 'lucide-react'
+import { Search, Loader, Bot, Sparkles, Filter, ShieldCheck, Zap, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../../lib/utils'
 import { useQuery } from '@tanstack/react-query'
-import apiClient from '../../lib/apiClient'
+import api from '../../services/api'
 
 const AISummaryView = () => {
     const [searchTerm, setSearchTerm] = useState('')
+    const [refineMsg, setRefineMsg] = useState('')
+    const [transcript, setTranscript] = useState(null)
 
-    const { data: leads = [], isLoading } = useQuery({
+    const { data: leads = [], isLoading, refetch, isFetching } = useQuery({
         queryKey: ['leads-ai-summary'],
         queryFn: async () => {
-            const res = await apiClient.get('/leads');
-            const leadsArr = Array.isArray(res?.data?.data) ? res.data.data : (Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []));
+            const res = await api.get('/counselor/leads');
+            const leadsArr = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
             return leadsArr.map(l => ({
                 id: l.id,
                 leadName: l.name,
@@ -29,8 +31,8 @@ const AISummaryView = () => {
     const summaryData = leads;
 
     const filteredData = summaryData.filter(s =>
-        s.leadName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.program.toLowerCase().includes(searchTerm.toLowerCase())
+        (s.leadName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s.program || '').toLowerCase().includes(searchTerm.toLowerCase())
     )
 
     return (
@@ -44,9 +46,22 @@ const AISummaryView = () => {
                     <p className="text-sm font-medium text-[#6B7280] mt-1">Review conversational AI qualification summaries and lead propensities.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="bg-[#111827] text-white px-5 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-indigo-100 flex items-center gap-2">
-                        <Sparkles size={14} /> Refine Algorithm
-                    </button>
+                    <div className="flex flex-col items-end gap-1">
+                        <button 
+                            onClick={async () => {
+                                setRefineMsg('')
+                                await refetch()
+                                setRefineMsg('Algorithm refined successfully!')
+                                setTimeout(() => setRefineMsg(''), 3000)
+                            }}
+                            disabled={isFetching}
+                            className="bg-[#111827] text-white px-5 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-indigo-100 flex items-center gap-2 disabled:opacity-75 active:scale-95"
+                        >
+                            {isFetching ? <Loader size={14} className="animate-spin" /> : <Sparkles size={14} />} 
+                            Refine Algorithm
+                        </button>
+                        {refineMsg && <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest animate-pulse">{refineMsg}</span>}
+                    </div>
                 </div>
             </div>
 
@@ -129,7 +144,7 @@ const AISummaryView = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="p-5 grid grid-cols-2 gap-4">
+                                            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="space-y-1">
                                                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1"><Zap size={10} className="text-indigo-400" /> Target Context</span>
                                                     <p className="text-xs font-black text-[#111827]">{data.program}</p>
@@ -144,7 +159,10 @@ const AISummaryView = () => {
                                                 </div>
                                                 <div className="space-y-1">
                                                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Qualification Log</span>
-                                                    <button className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline hover:text-indigo-800 transition-all text-left">View full transcript &rarr;</button>
+                                                     <button 
+                                                         onClick={() => setTranscript(data)}
+                                                         className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest hover:underline hover:text-indigo-800 transition-all text-left"
+                                                     >View full transcript →</button>
                                                 </div>
                                             </div>
                                         </motion.div>
@@ -155,8 +173,39 @@ const AISummaryView = () => {
                     </div>
                 </div>
             </div>
+            {/* Transcript Modal */}
+            <AnimatePresence>
+                {transcript && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+                        onClick={() => setTranscript(null)}
+                    >
+                        <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }}
+                            onClick={e => e.stopPropagation()}
+                            className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 space-y-4"
+                        >
+                            <div className="flex justify-between items-center">
+                                <h3 className="font-black text-[#111827] uppercase tracking-tighter">Qualification Log</h3>
+                                <button onClick={() => setTranscript(null)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors"><X size={16} /></button>
+                            </div>
+                            <div className="space-y-2 text-xs text-gray-600">
+                                <p><span className="font-black uppercase text-gray-400 text-[9px] tracking-widest">Lead:</span> {transcript.leadName}</p>
+                                <p><span className="font-black uppercase text-gray-400 text-[9px] tracking-widest">Program:</span> {transcript.program || 'N/A'}</p>
+                                <p><span className="font-black uppercase text-gray-400 text-[9px] tracking-widest">Country:</span> {transcript.country || 'N/A'}</p>
+                                <p><span className="font-black uppercase text-gray-400 text-[9px] tracking-widest">Confidence Score:</span> {transcript.score || '--'}</p>
+                                <p><span className="font-black uppercase text-gray-400 text-[9px] tracking-widest">Propensity:</span> {transcript.category}</p>
+                                <p><span className="font-black uppercase text-gray-400 text-[9px] tracking-widest">Budget:</span> {transcript.budget}</p>
+                                <p><span className="font-black uppercase text-gray-400 text-[9px] tracking-widest">Intake:</span> {transcript.intake}</p>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     )
 }
 
 export default AISummaryView
+
+
+

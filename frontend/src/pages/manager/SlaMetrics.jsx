@@ -12,10 +12,12 @@ import {
     RefreshCcw,
     MousePointer2
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { cn } from '../../lib/utils'
 import { useManagerActions } from '../../hooks/useManagerActions'
 
 const SlaMetrics = () => {
+    const navigate = useNavigate()
     const { useSlaMetrics, refreshData } = useManagerActions()
     const { data: sla, isLoading } = useSlaMetrics()
     const [searchTeam, setSearchTeam] = useState('')
@@ -37,20 +39,20 @@ const SlaMetrics = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-black text-[#111827] uppercase tracking-tighter">SLA <span className="text-indigo-600">Metrics</span></h1>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Team-level response integrity and compliance orchestration</p>
+                    <h1 className="text-2xl sm:text-3xl font-black text-[#111827] uppercase tracking-tighter">SLA <span className="text-indigo-600">Metrics</span></h1>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] leading-relaxed">Team-level response integrity and compliance orchestration</p>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="bg-white border border-[#E5E7EB] rounded-xl px-4 py-2.5 flex items-center gap-3 shadow-sm">
-                        <Filter size={14} className="text-gray-400" />
-                        <span className="text-[10px] font-black text-[#111827] uppercase tracking-widest">Team / Time Range</span>
-                        <div className="h-4 w-[1px] bg-gray-100" />
-                        <span className="text-[9px] font-bold text-indigo-600 uppercase">Interactive SLA Suite</span>
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="bg-white border border-[#E5E7EB] rounded-xl px-4 py-2.5 flex items-center gap-3 shadow-sm w-full sm:w-auto overflow-x-auto no-scrollbar">
+                        <Filter size={14} className="text-gray-400 shrink-0" />
+                        <span className="text-[10px] font-black text-[#111827] uppercase tracking-widest shrink-0">Team / Time Range</span>
+                        <div className="h-4 w-[1px] bg-gray-100 shrink-0" />
+                        <span className="text-[9px] font-bold text-indigo-600 uppercase shrink-0">Interactive SLA Suite</span>
                     </div>
                     <button
                         onClick={() => refreshData.mutate('sla')}
-                        className="p-2.5 border border-[#E5E7EB] rounded-xl text-gray-500 bg-gray-50 hover:bg-gray-100 hover:text-[#111827] transition-all shadow-sm active:scale-95"
+                        className="p-2.5 border border-[#E5E7EB] rounded-xl text-gray-500 bg-gray-50 hover:bg-gray-100 hover:text-[#111827] transition-all shadow-sm active:scale-95 shrink-0"
                     >
                         <RefreshCcw size={16} />
                     </button>
@@ -72,7 +74,8 @@ const SlaMetrics = () => {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-[2.5rem] border border-[#E5E7EB] shadow-sm overflow-hidden overflow-x-auto no-scrollbar">
+                <div className="bg-white rounded-[1.5rem] sm:rounded-[2.5rem] border border-[#E5E7EB] shadow-sm overflow-hidden block w-full relative">
+                    <div className="overflow-x-auto w-full no-scrollbar pb-2">
                     <table className="w-full text-left border-collapse min-w-[800px]">
                         <thead>
                             <tr className="bg-[#F9FAFB]/50">
@@ -131,7 +134,10 @@ const SlaMetrics = () => {
                                         </div>
                                     </td>
                                     <td className="px-8 py-7 text-right">
-                                        <button className="px-5 py-2.5 bg-white border border-gray-100 rounded-xl text-[9px] font-black uppercase tracking-widest text-[#111827] hover:bg-[#111827] hover:text-white transition-all shadow-sm active:scale-90 flex items-center gap-2 ml-auto group-hover:scale-105">
+                                        <button 
+                                            onClick={() => navigate('/team-leader/activity')}
+                                            className="px-5 py-2.5 bg-white border border-gray-100 rounded-xl text-[9px] font-black uppercase tracking-widest text-[#111827] hover:bg-[#111827] hover:text-white transition-all shadow-sm active:scale-90 flex items-center gap-2 ml-auto group-hover:scale-105 shrink-0 whitespace-nowrap"
+                                        >
                                             Logs <ChevronRight size={12} />
                                         </button>
                                     </td>
@@ -139,17 +145,18 @@ const SlaMetrics = () => {
                             ))}
                         </tbody>
                     </table>
+                    </div>
                 </div>
 
                 {/* Insight Card */}
-                <div className="bg-[#111827] rounded-[2.5rem] p-10 text-white flex flex-col items-center text-center space-y-6 relative overflow-hidden">
+                <div className="bg-[#111827] rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-10 text-white flex flex-col items-center text-center space-y-4 sm:space-y-6 relative overflow-hidden">
                     <ShieldCheck className="absolute -left-10 -top-10 text-white/5" size={200} />
                     <div className="relative z-10 space-y-2">
                         <div className="flex items-center justify-center gap-2 text-emerald-400">
                             <CheckCircle2 size={16} />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Global SLA Health: Stable</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] leading-relaxed">Global SLA Health: Stable</span>
                         </div>
-                        <h3 className="text-xl font-black uppercase tracking-tighter max-w-xl">
+                        <h3 className="text-lg sm:text-xl font-black uppercase tracking-tighter max-w-xl leading-snug">
                             "Compliance has increased by <span className="text-indigo-400">2.8%</span> since the implementation of AI-driven lead routing."
                         </h3>
                     </div>
@@ -160,3 +167,5 @@ const SlaMetrics = () => {
 }
 
 export default SlaMetrics
+
+

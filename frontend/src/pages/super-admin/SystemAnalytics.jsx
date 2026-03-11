@@ -2,8 +2,9 @@ import React from 'react'
 import { Filter, Search, ChevronDown, CheckCircle, TrendingUp, Inbox, Target, Zap, RefreshCcw, BarChart3, Users2, Timer } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useQuery } from '@tanstack/react-query'
-import apiClient from '../../lib/apiClient'
+import api from '../../services/api'
 import { motion } from 'framer-motion'
+import useAppStore from '../../store/useStore'
 
 const SummaryTable = ({ title, icon: Icon, color, headers, data, isLoading }) => (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[2rem] border border-[#E5E7EB] shadow-sm flex flex-col overflow-hidden">
@@ -59,9 +60,18 @@ const SummaryTable = ({ title, icon: Icon, color, headers, data, isLoading }) =>
 )
 
 const SystemAnalytics = () => {
+    const { country, statusFilter, teamMember, dateRange } = useAppStore()
+
     const { data: analytics, isLoading, refetch, isFetching } = useQuery({
-        queryKey: ['system-analytics'],
-        queryFn: () => apiClient.get('/analytics/summary').then(res => res.data)
+        queryKey: ['system-analytics', country, statusFilter, teamMember, dateRange?.label],
+        queryFn: () => api.get('/analytics/summary', {
+            params: {
+                country,
+                status: statusFilter,
+                operator: teamMember,
+                dateLabel: dateRange?.label
+            }
+        }).then(res => res.data)
     })
 
     return (
@@ -149,3 +159,6 @@ const SystemAnalytics = () => {
 }
 
 export default SystemAnalytics
+
+
+

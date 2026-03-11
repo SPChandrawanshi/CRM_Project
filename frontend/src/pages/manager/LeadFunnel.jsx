@@ -1,5 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import {
     Target,
     Download,
@@ -15,6 +16,7 @@ import { cn } from '../../lib/utils'
 import { useManagerActions } from '../../hooks/useManagerActions'
 
 const LeadFunnel = () => {
+    const navigate = useNavigate()
     const { useFunnel, exportCsv, refreshData } = useManagerActions()
     const { data: funnel, isLoading } = useFunnel()
     const exportFunnel = exportCsv
@@ -124,7 +126,10 @@ const LeadFunnel = () => {
                                         </div>
                                     </td>
                                     <td className="px-8 py-8 text-right">
-                                        <button className="px-5 py-2.5 bg-white border border-gray-100 rounded-xl text-[9px] font-black uppercase tracking-widest text-[#111827] hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm active:scale-90">
+                                        <button 
+                                            onClick={() => navigate('/admin/ai-config')}
+                                            className="px-5 py-2.5 bg-white border border-gray-100 rounded-xl text-[9px] font-black uppercase tracking-widest text-[#111827] hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm active:scale-90"
+                                        >
                                             Protocol View
                                         </button>
                                     </td>
@@ -139,7 +144,10 @@ const LeadFunnel = () => {
                         <h4 className="text-sm font-black text-[#111827] uppercase tracking-tight">Autonomous Funnel Optimization</h4>
                         <p className="text-[10px] font-bold text-gray-500 max-w-lg uppercase leading-relaxed">System has detected a 4.2% drop-off in the CONVERTED stage. Recommend increasing follow-up frequency for the Indian Admissions Team.</p>
                     </div>
-                    <button className="px-6 py-3 bg-[#111827] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 transition-all flex items-center gap-2">
+                    <button 
+                        onClick={() => refreshFunnel.mutate('optimization')}
+                        className="px-6 py-3 bg-[#111827] text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 transition-all flex items-center gap-2"
+                    >
                         Apply System Optimizations <ArrowRight size={14} />
                     </button>
                 </div>
@@ -149,3 +157,5 @@ const LeadFunnel = () => {
 }
 
 export default LeadFunnel
+
+

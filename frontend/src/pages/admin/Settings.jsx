@@ -1,10 +1,12 @@
 // Admin Settings Page
 import { useState } from 'react'
 import { FaSave, FaCalendarAlt, FaFileInvoice } from 'react-icons/fa'
+import { useAdminActions } from '../../hooks/useCrmMutations'
 
 const AdminSettings = () => {
     const [currency, setCurrency] = useState('GBP')
     const [invoicePrefix, setInvoicePrefix] = useState('INV')
+    const { executeAction, downloadReport } = useAdminActions()
 
     const bankHolidays = [
         { date: '2024-01-01', name: 'New Year\'s Day' },
@@ -58,8 +60,9 @@ const AdminSettings = () => {
                         </div>
 
                         <button
-                            onClick={() => alert('Settings saved successfully!')}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all"
+                            onClick={() => executeAction.mutate('save_settings')}
+                            disabled={executeAction.isPending}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
                         >
                             <FaSave /> Save Settings
                         </button>
@@ -71,8 +74,9 @@ const AdminSettings = () => {
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-bold text-gray-800">Bank Holidays</h2>
                         <button
-                            onClick={() => alert('Add Holiday functionality coming soon!')}
-                            className="text-cyan-600 hover:text-cyan-800 text-sm font-medium"
+                            onClick={() => executeAction.mutate('add_holiday')}
+                            disabled={executeAction.isPending}
+                            className="text-cyan-600 hover:text-cyan-800 text-sm font-medium disabled:opacity-50"
                         >
                             + Add Holiday
                         </button>
@@ -89,8 +93,9 @@ const AdminSettings = () => {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={() => alert('Holiday removed successfully!')}
-                                    className="text-red-600 hover:text-red-800 text-sm"
+                                    onClick={() => executeAction.mutate('remove_holiday')}
+                                    disabled={executeAction.isPending}
+                                    className="text-red-600 hover:text-red-800 text-sm disabled:opacity-50"
                                 >
                                     Remove
                                 </button>
@@ -147,8 +152,9 @@ const AdminSettings = () => {
                         </div>
 
                         <button
-                            onClick={() => alert('Holiday report generation started...')}
-                            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all w-full justify-center"
+                            onClick={() => downloadReport.mutate('holiday_report')}
+                            disabled={downloadReport.isPending}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all w-full justify-center disabled:opacity-50"
                         >
                             <FaFileInvoice /> Generate Report
                         </button>
@@ -160,3 +166,5 @@ const AdminSettings = () => {
 }
 
 export default AdminSettings
+
+

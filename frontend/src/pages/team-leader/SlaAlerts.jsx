@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     AlertTriangle,
@@ -15,8 +16,10 @@ import { cn } from '../../lib/utils'
 import { useTeamLeaderActions } from '../../hooks/useTeamLeaderActions'
 
 const SlaAlerts = () => {
-    const { useSlaAlerts, sendReminder, reassignLead, refreshData } = useTeamLeaderActions()
+    const navigate = useNavigate()
+    const { useSlaAlerts, sendReminder, reassignLead, refreshData, usePerformance } = useTeamLeaderActions()
     const { data: alerts, isLoading } = useSlaAlerts()
+    const { data: performanceData } = usePerformance()
 
     const [searchQuery, setSearchQuery] = useState('')
     const [reassignModalOpen, setReassignModalOpen] = useState(false)
@@ -30,14 +33,23 @@ const SlaAlerts = () => {
     )
 
     const slaAlerts = alerts?.data || []
-    const filteredAlerts = slaAlerts.filter(a =>
-        a.leadName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.counselor.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    const filteredAlerts = slaAlerts.filter(a => {
+        const leadName = a.leadName || a.lead || 'Unknown Lead'
+        const counselor = a.counselor || 'Unassigned'
+        
+        return leadName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            counselor.toLowerCase().includes(searchQuery.toLowerCase())
+    })
+
+    const getDisplayLead = (alert) => alert.leadName || alert.lead || 'Unknown Lead'
+    const getDisplayCounselor = (alert) => alert.counselor || 'Unassigned'
+    
+    // Extract available counselors from performance data
+    const activeCounselors = performanceData?.data ? performanceData.data.map(p => p.counselor) : []
 
     const handleReassign = () => {
         if (!newCounselor || !selectedAlert) return
-        reassignLead.mutate({ leadId: selectedAlert.id, newCounselor })
+        reassignLead.mutate({ leadId: selectedAlert.leadId, newCounselor })
         setReassignModalOpen(false)
         setSelectedAlert(null)
         setNewCounselor('')
@@ -122,7 +134,7 @@ const SlaAlerts = () => {
                                         <span className={cn(
                                             "text-xs font-black uppercase tracking-tight",
                                             alert.status === 'Breached' ? "text-rose-900" : "text-[#111827]"
-                                        )}>{alert.leadName}</span>
+                                        )}>{getDisplayLead(alert)}</span>
                                         <div className="text-[9px] font-bold text-gray-400 uppercase mt-1">
                                             Breach Time: {alert.breachTime}
                                         </div>
@@ -130,9 +142,9 @@ const SlaAlerts = () => {
                                     <td className="px-8 py-6">
                                         <div className="flex items-center gap-2">
                                             <div className="w-6 h-6 rounded-md bg-gray-100 flex items-center justify-center text-[8px] font-black text-gray-500">
-                                                {alert.counselor.charAt(0)}
+                                                {getDisplayCounselor(alert).charAt(0)}
                                             </div>
-                                            <span className="text-[10px] font-black text-[#111827] uppercase">{alert.counselor}</span>
+                                            <span className="text-[10px] font-black text-[#111827] uppercase">{getDisplayCounselor(alert)}</span>
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">
@@ -147,7 +159,7 @@ const SlaAlerts = () => {
                                     <td className="px-4 py-6 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <button
-                                                onClick={() => sendReminder.mutate(alert.counselor)}
+                                                onClick={() => sendReminder.mutate(getDisplayCounselor(alert))}
                                                 className={cn(
                                                     "p-2 rounded-lg transition-colors border shadow-sm flex items-center gap-2 ",
                                                     alert.status === 'Breached' ? "bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-100" : "bg-amber-50 text-amber-600 hover:bg-amber-100 border-amber-100"
@@ -156,6 +168,13 @@ const SlaAlerts = () => {
                                             >
                                                 <BellRing size={14} className={alert.status === 'Breached' ? "animate-bounce" : ""} />
                                                 <span className="text-[8px] font-black uppercase tracking-widest">Ping</span>
+                                            </button>
+                                            <button
+                                                onClick={() => navigate('/team-leader/inbox')}
+                                                className="w-8 h-8 flex items-center justify-center border border-gray-100 rounded-xl text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-all shadow-sm bg-white shrink-0"
+                                                title="View Conversation"
+                                            >
+                                                <MessageSquare size={14} />
                                             </button>
                                             <button
                                                 onClick={() => {
@@ -195,7 +214,7 @@ const SlaAlerts = () => {
                             initial={{ opacity: 0, scale: 0.95, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                            className="bg-white rounded-[2rem] w-full max-w-sm relative z-10 shadow-2xl p-8 space-y-6 text-center"
+                            className="bg-white rounded-[2rem] w-full max-w-sm relative z-10 shadow-2xl p-8 space-y-6 text-center mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar"
                         >
                             <div className="mx-auto w-16 h-16 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-4">
                                 <AlertTriangle size={24} />
@@ -204,7 +223,7 @@ const SlaAlerts = () => {
                             <div className="space-y-1">
                                 <h3 className="text-lg font-black text-[#111827] uppercase tracking-tighter">Emergency Reassign</h3>
                                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-relaxed">
-                                    SLA breached for <span className="text-indigo-600">{selectedAlert.leadName}</span>.<br /> Currently with {selectedAlert.counselor}.
+                                    SLA breached for <span className="text-indigo-600">{getDisplayLead(selectedAlert)}</span>.<br /> Currently with {getDisplayCounselor(selectedAlert)}.
                                 </p>
                             </div>
 
@@ -216,9 +235,12 @@ const SlaAlerts = () => {
                                     className="w-full bg-[#F9FAFB] border border-[#E5E7EB] text-[#111827] rounded-xl px-4 py-3 text-xs font-bold uppercase tracking-widest outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none"
                                 >
                                     <option value="" disabled>Select available counselor...</option>
-                                    {['Rahul K.', 'Jane D.', 'Mike W.', 'Sarah J.', 'Carlos R.', 'Yuki T.']
-                                        .filter(c => c !== selectedAlert.counselor)
+                                    {activeCounselors
+                                        .filter(c => c !== getDisplayCounselor(selectedAlert))
                                         .map(c => <option key={c} value={c}>{c}</option>)}
+                                    {activeCounselors.length === 0 && (
+                                        <option disabled>Loading database counselors...</option>
+                                    )}
                                 </select>
                             </div>
 
@@ -254,3 +276,5 @@ const SlaAlerts = () => {
 }
 
 export default SlaAlerts
+
+

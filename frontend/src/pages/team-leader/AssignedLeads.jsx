@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Users,
@@ -27,6 +28,7 @@ const STATUS_CONFIG = {
 }
 
 const AssignedLeads = () => {
+    const navigate = useNavigate()
     const { useLeads, updateLeadStatus, addTeamNote, refreshData } = useTeamLeaderActions()
     const { data: leads, isLoading } = useLeads()
 
@@ -43,11 +45,15 @@ const AssignedLeads = () => {
     )
 
     const assignedLeads = leads?.data || []
-    const filteredLeads = assignedLeads.filter(l =>
-        l.leadName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        l.counselor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        l.country.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    const filteredLeads = assignedLeads.filter(l => {
+        const ln = l.leadName || '';
+        const clr = l.counselor || '';
+        const ctry = l.country || '';
+
+        return ln.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               clr.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               ctry.toLowerCase().includes(searchQuery.toLowerCase());
+    })
 
     const handleStatusChange = (leadId, newStatus) => {
         updateLeadStatus.mutate({ leadId, status: newStatus })
@@ -191,6 +197,13 @@ const AssignedLeads = () => {
                                                 <FileText size={14} />
                                             </button>
                                             <button
+                                                onClick={() => navigate('/team-leader/inbox')}
+                                                className="w-8 h-8 flex items-center justify-center border border-gray-100 rounded-xl text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-all shadow-sm bg-white shrink-0"
+                                                title="View Conversation"
+                                            >
+                                                <MessageSquare size={14} />
+                                            </button>
+                                            <button
                                                 onClick={() => setSelectedLead(lead)}
                                                 className="w-8 h-8 shrink-0 rounded-full bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 shadow-sm transition-all hover:bg-indigo-100 hover:scale-110"
                                             >
@@ -224,7 +237,7 @@ const AssignedLeads = () => {
                             initial={{ opacity: 0, scale: 0.95, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                            className="bg-white rounded-[2rem] w-full max-w-lg relative z-10 shadow-2xl p-8 space-y-6"
+                            className="bg-white rounded-[2rem] w-full max-w-lg relative z-10 shadow-2xl p-8 space-y-6 mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar"
                         >
                             <div className="flex items-start justify-between">
                                 <div className="space-y-1">
@@ -314,3 +327,5 @@ const AssignedLeads = () => {
 }
 
 export default AssignedLeads
+
+

@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { FaPlus, FaEdit, FaTrash, FaEye, FaTimes, FaUser, FaEnvelope, FaLock, FaPhone, FaBriefcase } from 'react-icons/fa'
+import { useQuery } from '@tanstack/react-query'
+import api from '../../services/api'
+import { useUserActions } from '../../hooks/useCrmMutations'
+import { toast } from '../../components/ui/Toast'
 
 const AdminUsers = () => {
     const location = useLocation()
@@ -21,18 +25,20 @@ const AdminUsers = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [selectedUser, setSelectedUser] = useState(null)
 
-    const teamMembers = [
-        { id: 'S001', name: 'John Smith', role: 'Nurse', phone: '07123456789', email: 'john.smith@example.com', status: 'Active' },
-        { id: 'S002', name: 'Sarah Johnson', role: 'Carer', phone: '07987654321', email: 'sarah.j@example.com', status: 'Active' },
-        { id: 'S003', name: 'Mike Wilson', role: 'Support Worker', phone: '07444555666', email: 'mike.w@example.com', status: 'Active' },
-        { id: 'S004', name: 'Emma Davis', role: 'Manager', phone: '07222333444', email: 'emma.d@example.com', status: 'Active' },
-    ]
+    const { data: usersResponse, isLoading } = useQuery({
+        queryKey: ['users'],
+        queryFn: () => api.get('/users').then(res => res.data)
+    })
+    const teamMembers = usersResponse?.data || []
 
-    const serviceUsers = [
-        { id: 'C001', name: 'James Peterson', email: 'james.p@client.com', phone: '01234567890', funder: 'NHS', carePlan: 'Active' },
-        { id: 'C002', name: 'Mary Collins', email: 'mary.c@client.com', phone: '09876543210', funder: 'Private', carePlan: 'Active' },
-        { id: 'C003', name: 'Robert Taylor', email: 'robert.t@client.com', phone: '01122334455', funder: 'Local Authority', carePlan: 'Active' },
-    ]
+    const { addUser, updateUser, deleteUser } = useUserActions()
+    const [formData, setFormData] = useState({ name: '', email: '', password: '', phone: '', role: 'NURSE', status: 'Active' })
+
+    const { data: customersResponse, isLoading: loadingCustomers } = useQuery({
+        queryKey: ['customers'],
+        queryFn: () => api.get('/customers').then(res => res.data)
+    })
+    const serviceUsers = customersResponse?.data || []
 
     const teamHolidays = [
         { id: 'H001', name: 'John Smith', type: 'Annual Leave', start: '2024-03-01', end: '2024-03-05', status: 'Approved' },
@@ -55,11 +61,13 @@ const AdminUsers = () => {
 
     const handleAddStaff = () => {
         setSelectedUser(null)
+        setFormData({ name: '', email: '', password: '', phone: '', role: 'COUNSELOR', status: 'Active' })
         setShowAddModal(true)
     }
 
     const handleEditUser = (user) => {
         setSelectedUser(user)
+        setFormData({ ...user, password: '' })
         setShowEditModal(true)
     }
 
@@ -87,7 +95,7 @@ const AdminUsers = () => {
                 <p className="text-gray-600">Access and manage user records from the sidebar menu</p>
             </div>
 
-            <div className="crm-card !p-0 overflow-hidden min-h-[500px]">
+            <div className="crm-card !p-0 overflow-hidden min-h-[500px] w-full min-w-0">
                 <div className="p-4 md:p-6">
                     {activeTab === 'team-members' && (
                         <>
@@ -102,7 +110,7 @@ const AdminUsers = () => {
                             </div>
 
                             {/* Desktop Table - Team Members */}
-                            <div className="hidden md:block overflow-x-auto">
+                            <div className="hidden md:block overflow-x-auto w-full max-w-full">
                                 <table className="w-full">
                                     <thead className="bg-gray-50 border-b border-gray-200">
                                         <tr>
@@ -116,7 +124,9 @@ const AdminUsers = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
-                                        {teamMembers.map((member) => (
+                                        {isLoading ? (
+                                            <tr><td colSpan="7" className="text-center py-4">Loading users...</td></tr>
+                                        ) : teamMembers.map((member) => (
                                             <tr key={member.id} className="hover:bg-gray-50">
                                                 <td className="px-4 py-3 text-sm font-medium text-gray-800">{member.id}</td>
                                                 <td className="px-4 py-3 text-sm text-gray-800">{member.name}</td>
@@ -216,7 +226,7 @@ const AdminUsers = () => {
                             </div>
 
                             {/* Desktop Table - Service Users */}
-                            <div className="hidden md:block overflow-x-auto">
+                            <div className="hidden md:block overflow-x-auto w-full max-w-full">
                                 <table className="w-full">
                                     <thead className="bg-gray-50 border-b border-gray-200">
                                         <tr>
@@ -230,7 +240,9 @@ const AdminUsers = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
-                                        {serviceUsers.map((user) => (
+                                        {loadingCustomers ? (
+                                            <tr><td colSpan="7" className="text-center py-4">Loading customers...</td></tr>
+                                        ) : serviceUsers.map((user) => (
                                             <tr key={user.id} className="hover:bg-gray-50">
                                                 <td className="px-4 py-3 text-sm font-medium text-gray-800">{user.id}</td>
                                                 <td className="px-4 py-3 text-sm text-gray-800">{user.name}</td>
@@ -328,7 +340,7 @@ const AdminUsers = () => {
                                     + Request Absence
                                 </button>
                             </div>
-                            <div className="overflow-x-auto no-scrollbar">
+                            <div className="overflow-x-auto no-scrollbar w-full max-w-full">
                                 <table className="w-full min-w-[600px]">
                                     <thead className="bg-gray-50">
                                         <tr>
@@ -358,7 +370,7 @@ const AdminUsers = () => {
                     {activeTab === 'service-forms' && (
                         <div>
                             <h2 className="text-xl font-bold text-gray-800 mb-4">Service User Forms</h2>
-                            <div className="overflow-x-auto no-scrollbar">
+                            <div className="overflow-x-auto no-scrollbar w-full max-w-full">
                                 <table className="w-full min-w-[600px]">
                                     <thead className="bg-gray-50">
                                         <tr>
@@ -388,7 +400,7 @@ const AdminUsers = () => {
                     {activeTab === 'service-holidays' && (
                         <div>
                             <h2 className="text-xl font-bold text-gray-800 mb-4">Service User Holidays</h2>
-                            <div className="overflow-x-auto no-scrollbar">
+                            <div className="overflow-x-auto no-scrollbar w-full max-w-full">
                                 <table className="w-full min-w-[500px]">
                                     <thead className="bg-gray-50">
                                         <tr>
@@ -537,12 +549,17 @@ const AdminUsers = () => {
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                                     <FaBriefcase className="inline mr-2" />Role *
                                                 </label>
-                                                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none">
-                                                    <option>Select role</option>
-                                                    <option>Nurse</option>
-                                                    <option>Carer</option>
-                                                    <option>Support Worker</option>
-                                                    <option>Manager</option>
+                                                <select
+                                                    value={formData.role}
+                                                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
+                                                >
+                                                    <option value="">Select role</option>
+                                                    <option value="COUNSELOR">Nurse / Counselor</option>
+                                                    <option value="SUPPORT">Carer / Support Worker</option>
+                                                    <option value="MANAGER">Manager</option>
+                                                    <option value="TEAM_LEADER">Team Leader</option>
+                                                    <option value="ADMIN">Admin</option>
                                                 </select>
                                             </div>
                                         )}
@@ -586,13 +603,19 @@ const AdminUsers = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        alert(`${activeTab === 'team-members' ? 'Staff' :
-                                            activeTab === 'service-users' ? 'Service User' : 'Absence request'} saved successfully!`)
-                                        setShowAddModal(false)
+                                        if (activeTab === 'team-members') {
+                                            addUser.mutate(formData, {
+                                                onSuccess: () => setShowAddModal(false)
+                                            })
+                                        } else {
+                                            toast.success(`${activeTab === 'service-users' ? 'Service User' : 'Absence request'} saved successfully!`)
+                                            setShowAddModal(false)
+                                        }
                                     }}
-                                    className="flex-1 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg"
+                                    className="flex-1 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg disabled:opacity-50"
+                                    disabled={addUser.isPending}
                                 >
-                                    {activeTab === 'team-members' ? 'Add Staff' :
+                                    {addUser.isPending ? 'Saving...' : activeTab === 'team-members' ? 'Add Staff' :
                                         activeTab === 'service-users' ? 'Add Service User' : 'Submit Request'}
                                 </button>
                             </div>
@@ -619,7 +642,8 @@ const AdminUsers = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        defaultValue={selectedUser.name}
+                                        value={formData.name || ''}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
                                     />
                                 </div>
@@ -629,7 +653,8 @@ const AdminUsers = () => {
                                     </label>
                                     <input
                                         type="email"
-                                        defaultValue={selectedUser.email}
+                                        value={formData.email || ''}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
                                     />
                                 </div>
@@ -659,13 +684,15 @@ const AdminUsers = () => {
                                             <FaBriefcase className="inline mr-2" />Role *
                                         </label>
                                         <select
-                                            defaultValue={selectedUser.role}
+                                            value={formData.role || ''}
+                                            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none"
                                         >
-                                            <option>Nurse</option>
-                                            <option>Carer</option>
-                                            <option>Support Worker</option>
-                                            <option>Manager</option>
+                                            <option value="COUNSELOR">Nurse</option>
+                                            <option value="SUPPORT">Carer</option>
+                                            <option value="MANAGER">Manager</option>
+                                            <option value="TEAM_LEADER">Team Leader</option>
+                                            <option value="ADMIN">Admin</option>
                                         </select>
                                     </div>
                                 )}
@@ -689,12 +716,14 @@ const AdminUsers = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        alert('User details updated successfully!')
-                                        setShowEditModal(false)
+                                        updateUser.mutate({ id: formData.id, ...formData }, {
+                                            onSuccess: () => setShowEditModal(false)
+                                        })
                                     }}
-                                    className="flex-1 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg"
+                                    disabled={updateUser.isPending}
+                                    className="flex-1 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-lg hover:shadow-lg disabled:opacity-50"
                                 >
-                                    Save Changes
+                                    {updateUser.isPending ? 'Saving...' : 'Save Changes'}
                                 </button>
                             </div>
                         </div>
@@ -705,7 +734,7 @@ const AdminUsers = () => {
             {/* View User Modal */}
             {showViewModal && selectedUser && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-cyan-500 to-teal-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">User Details</h2>
                             <button onClick={() => setShowViewModal(false)} className="text-white hover:text-gray-200">
@@ -765,7 +794,7 @@ const AdminUsers = () => {
             {/* Delete Confirmation Modal */}
             {showDeleteModal && selectedUser && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Confirm Delete</h2>
                             <button onClick={() => setShowDeleteModal(false)} className="text-white hover:text-gray-200">
@@ -788,12 +817,14 @@ const AdminUsers = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        alert('User deleted successfully!')
-                                        setShowDeleteModal(false)
+                                        deleteUser.mutate(selectedUser.id, {
+                                            onSuccess: () => setShowDeleteModal(false)
+                                        })
                                     }}
-                                    className="flex-1 px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:shadow-lg"
+                                    disabled={deleteUser.isPending}
+                                    className="flex-1 px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:shadow-lg disabled:opacity-50"
                                 >
-                                    Delete User
+                                    {deleteUser.isPending ? 'Deleting...' : 'Delete User'}
                                 </button>
                             </div>
                         </div>
@@ -805,3 +836,6 @@ const AdminUsers = () => {
 }
 
 export default AdminUsers
+
+
+

@@ -92,6 +92,7 @@ const AppRoutes = () => {
                 <Route path="/admin/ai-config" element={<AdminAIConfig />} />
                 <Route path="/admin/crm-settings" element={<CrmIntegration />} />
                 <Route path="/admin/working-hours" element={<WorkingHours />} />
+                <Route path="/admin/templates" element={<TemplatesLibrary />} />
 
                 {/* Manager Routes */}
                 <Route path="/manager" element={<ManagerDashboard />} />
@@ -131,3 +132,5 @@ const AppRoutes = () => {
 }
 
 export default AppRoutes
+
+

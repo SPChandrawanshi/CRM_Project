@@ -1,6 +1,7 @@
 // Team Member Daily Rota - Complete with All Modals
 import { useState } from 'react'
 import { FaMapMarkerAlt, FaClock, FaCheck, FaTimes, FaEye, FaStickyNote, FaExclamationTriangle } from 'react-icons/fa'
+import { toast } from '../../components/ui/Toast'
 
 const TeamMemberDailyRota = () => {
     const [showCheckinModal, setShowCheckinModal] = useState(false)
@@ -341,7 +342,7 @@ const TeamMemberDailyRota = () => {
             {/* Check-in Modal */}
             {showCheckinModal && selectedVisit && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-green-500 to-teal-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Check-in Visit</h2>
                             <button onClick={() => setShowCheckinModal(false)} className="text-white hover:text-gray-200">
@@ -392,7 +393,7 @@ const TeamMemberDailyRota = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        alert('Check-in confirmed!')
+                                        toast.success('Check-in confirmed!')
                                         setShowCheckinModal(false)
                                     }}
                                     className="flex-1 px-6 py-2.5 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-lg hover:shadow-lg"
@@ -417,7 +418,7 @@ const TeamMemberDailyRota = () => {
                         </div>
                         <div className="p-6">
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-sm text-gray-600 mb-1">Service User</p>
                                         <p className="text-lg font-semibold text-gray-800">{selectedVisit.serviceUser}</p>
@@ -488,7 +489,7 @@ const TeamMemberDailyRota = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        alert('Visit completed successfully!')
+                                        toast.success('Visit completed successfully!')
                                         setShowCompleteModal(false)
                                     }}
                                     className="flex-1 px-6 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:shadow-lg"
@@ -504,7 +505,7 @@ const TeamMemberDailyRota = () => {
             {/* Add Notes Modal */}
             {showNotesModal && selectedVisit && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-green-500 to-teal-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Add Notes</h2>
                             <button onClick={() => setShowNotesModal(false)} className="text-white hover:text-gray-200">
@@ -535,7 +536,7 @@ const TeamMemberDailyRota = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        alert('Notes saved!')
+                                        toast.success('Notes saved!')
                                         setShowNotesModal(false)
                                     }}
                                     className="flex-1 px-6 py-2.5 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-lg hover:shadow-lg"
@@ -551,7 +552,7 @@ const TeamMemberDailyRota = () => {
             {/* Report Missed Modal */}
             {showMissedModal && selectedVisit && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-red-500 to-orange-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Report Missed Visit</h2>
                             <button onClick={() => setShowMissedModal(false)} className="text-white hover:text-gray-200">
@@ -598,7 +599,7 @@ const TeamMemberDailyRota = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        alert('Missed visit reported!')
+                                        toast.success('Missed visit reported!')
                                         setShowMissedModal(false)
                                     }}
                                     className="flex-1 px-6 py-2.5 bg-gradient-to-r from-red-500 to-orange-600 text-white rounded-lg hover:shadow-lg"
@@ -614,7 +615,7 @@ const TeamMemberDailyRota = () => {
             {/* View Details Modal */}
             {showViewModal && selectedVisit && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-cyan-500 to-teal-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Visit Details</h2>
                             <button onClick={() => setShowViewModal(false)} className="text-white hover:text-gray-200">
@@ -622,7 +623,7 @@ const TeamMemberDailyRota = () => {
                             </button>
                         </div>
                         <div className="p-6">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-sm text-gray-600 mb-1">Visit ID</p>
                                     <p className="text-lg font-semibold text-gray-800">{selectedVisit.id}</p>
@@ -688,3 +689,5 @@ const TeamMemberDailyRota = () => {
 }
 
 export default TeamMemberDailyRota
+
+

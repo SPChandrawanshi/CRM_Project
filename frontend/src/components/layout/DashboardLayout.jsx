@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Navbar from './Navbar'
-import useAppStore from '../../store/useStore'
+import useAppStore, { ROLE_MAP } from '../../store/useStore'
 import { cn } from '../../lib/utils'
 
 const DashboardLayout = () => {
@@ -17,8 +17,9 @@ const DashboardLayout = () => {
             navigate('/login')
         } else if (userData && !isAuthenticated) {
             const parsed = JSON.parse(userData)
-            // Ensure the role matches the formats expected by Sidebar (e.g. 'Admin' vs 'admin')
-            const displayRole = parsed.role.charAt(0).toUpperCase() + parsed.role.slice(1)
+            // Use ROLE_MAP to convert backend enum (e.g. SUPER_ADMIN) to display role (e.g. 'Super Admin')
+            // This ensures sidebar menus are shown correctly
+            const displayRole = ROLE_MAP[parsed.role] || parsed.role
             login(displayRole, parsed)
         }
     }, [isAuthenticated, navigate, login])
@@ -47,3 +48,5 @@ const DashboardLayout = () => {
 }
 
 export default DashboardLayout
+
+

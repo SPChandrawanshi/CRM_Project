@@ -3,7 +3,7 @@ import { Shield, Lock, Key, Smartphone, Globe, Eye, Save, RotateCcw, ShieldAlert
 import { cn } from '../../lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { useSecurityActions } from '../../hooks/useCrmMutations'
-import apiClient from '../../lib/apiClient'
+import api from '../../services/api'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const SecurityCard = ({ title, description, icon: Icon, children }) => (
@@ -51,12 +51,12 @@ const SecuritySettings = () => {
 
     const { data: settingsData, isLoading: settingsLoading } = useQuery({
         queryKey: ['security-settings'],
-        queryFn: () => apiClient.get('/admin/security/settings').then(res => res.data || res)
+        queryFn: () => api.get('/admin/security/settings').then(res => res.data || res)
     })
 
     const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
         queryKey: ['active-sessions'],
-        queryFn: () => apiClient.get('/admin/security/sessions').then(res => Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []))
+        queryFn: () => api.get('/admin/security/sessions').then(res => Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []))
     })
 
     const [localSettings, setLocalSettings] = useState(null)
@@ -274,3 +274,6 @@ const SecuritySettings = () => {
 }
 
 export default SecuritySettings
+
+
+

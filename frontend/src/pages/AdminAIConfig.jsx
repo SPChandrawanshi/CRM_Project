@@ -16,48 +16,69 @@ import {
     Cpu,
     CheckCircle2,
     ArrowRight,
-    MessageSquare,
     Zap,
     Scale,
-    Edit2
+    Edit2,
+    RefreshCcw,
+    MessageSquare
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../lib/utils'
 import { useAiActions } from '../hooks/useCrmMutations'
 
-const PipelineStage = ({ label, icon: Icon, active, completed }) => (
-    <div className="flex items-center gap-3">
+const PipelineStage = ({ label, icon: Icon, active, completed, onClick }) => (
+    <div onClick={onClick} className={cn("flex items-center gap-3 md:gap-5 shrink-0 px-1 py-4", onClick && "cursor-pointer")}>
         <div className={cn(
-            "flex flex-col items-center gap-2 px-6 py-4 rounded-[2rem] border transition-all shadow-sm",
-            active ? "bg-indigo-600 border-indigo-600 text-white shadow-indigo-100 shadow-xl" :
-                completed ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-white border-gray-100 text-gray-400"
+            "relative flex flex-col items-center justify-center gap-2.5 md:gap-3 p-4 md:p-6 rounded-3xl border opacity-95 transition-all w-[130px] md:w-[170px] h-[90px] md:h-[120px] hover:opacity-100",
+            active ? "bg-[#4338CA] border-[#4338CA] shadow-xl shadow-indigo-500/40 scale-110 z-10" :
+                completed ? "bg-[#F0FDF4] border-[#86EFAC] shadow-lg shadow-emerald-500/10" : "bg-white border-gray-200 shadow-sm"
         )}>
-            <Icon size={20} strokeWidth={active ? 2.5 : 2} />
-            <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
+            {completed && !active && (
+                <div className="absolute top-2.5 right-2.5 md:top-3 md:right-3 bg-white rounded-full shadow-sm">
+                    <CheckCircle2 size={12} className="text-[#22C55E] md:w-3.5 md:h-3.5" strokeWidth={3} />
+                </div>
+            )}
+            <div className={cn(
+                "w-8 h-8 md:w-10 md:h-10 rounded-xl md:rounded-2xl flex items-center justify-center transition-all",
+                active ? "bg-white text-[#4338CA] shadow-md" : completed ? "bg-white text-[#16A34A] border border-emerald-100 shadow-sm" : "bg-gray-50 text-gray-400 border border-gray-100"
+            )}>
+                <Icon size={16} strokeWidth={2.5} className="md:w-5 md:h-5" />
+            </div>
+            <span className={cn(
+                "text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-center leading-tight mt-1",
+                active ? "text-white" : completed ? "text-[#064E3B]" : "text-gray-400"
+            )}>
+                {label}
+            </span>
         </div>
-        {!label.includes('CRM') && <ArrowRight size={16} className="text-gray-200" />}
+        {!label.includes('CRM') && (
+            <ArrowRight size={14} strokeWidth={2.5} className={cn(
+                "md:w-4 md:h-4 shrink-0",
+                active ? "text-indigo-400" : completed ? "text-emerald-300" : "text-gray-200"
+            )} />
+        )}
     </div>
 )
 
-const QuestionItem = React.forwardRef(({ question, index, tag, onDelete, onChange }, ref) => (
+const QuestionItem = React.forwardRef(({ question, index, tag, onDelete, onChange, onTagChange }, ref) => (
     <motion.div
         ref={ref}
         layout
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="crm-card !p-6 flex gap-6 items-start group transition-all"
+        className="crm-card !p-6 flex flex-col sm:flex-row gap-4 sm:gap-6 items-start group transition-all"
     >
         <div className="mt-2 flex flex-col items-center gap-1 cursor-grab text-gray-200 group-hover:text-indigo-400">
             <GripVertical size={24} />
         </div>
-        <div className="flex-1 space-y-4">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] font-black border border-indigo-100 shadow-inner">
+        <div className="flex-1 space-y-4 w-full min-w-0">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-1 md:gap-2">
+                    <span className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-[9px] md:text-[10px] font-black border border-indigo-100 shadow-inner shrink-0">
                         {index + 1}
                     </span>
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Logic Node</span>
+                    <span className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Logic Node</span>
                 </div>
                 <div className="flex items-center gap-1">
                     <button
@@ -73,20 +94,27 @@ const QuestionItem = React.forwardRef(({ question, index, tag, onDelete, onChang
                 value={question}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder="Enter qualification question..."
-                className="w-full font-black text-[#111827] bg-transparent border-none focus:ring-0 p-0 text-xl placeholder:text-gray-200 uppercase tracking-tight"
+                className="w-full font-black text-[#111827] bg-transparent border-none focus:ring-0 p-0 text-base md:text-xl placeholder:text-gray-200 uppercase tracking-tight"
             />
             <div className="flex gap-2">
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 text-indigo-600 rounded-lg border border-gray-100 group-hover:border-indigo-100 transition-colors">
                     <Database size={12} className="text-indigo-400" />
-                    <span className="text-[9px] font-black uppercase tracking-widest whitespace-nowrap">Extraction: {tag}</span>
+                    <input
+                        type="text"
+                        value={tag}
+                        onChange={(e) => onTagChange(e.target.value)}
+                        placeholder="DATA KEY..."
+                        className="bg-transparent border-none focus:ring-0 p-0 text-[10px] font-black uppercase tracking-widest w-24 placeholder:text-indigo-200"
+                    />
                 </div>
             </div>
         </div>
     </motion.div>
 ))
 
-import apiClient from '../lib/apiClient'
+import api from '../services/api'
 import { useQuery } from '@tanstack/react-query'
+import { toast } from '../components/ui/Toast'
 
 const AdminAIConfig = () => {
     const { publishFlow } = useAiActions()
@@ -95,7 +123,7 @@ const AdminAIConfig = () => {
     const { data: configResp, isLoading } = useQuery({
         queryKey: ['ai-config'],
         queryFn: async () => {
-            const res = await apiClient.get('/dashboard/ai-config');
+            const res = await api.get('/dashboard/ai-config');
             return res.data || res;
         }
     })
@@ -104,56 +132,89 @@ const AdminAIConfig = () => {
     const [threshold, setThreshold] = useState(70)
     const [rules, setRules] = useState([])
     const [scoringRules, setScoringRules] = useState([])
+    const [activeStage, setActiveStage] = useState('Qualification')
 
-    // Sync state when data is loaded
+    // Sync state when data is loaded (only once or when explicitly requested)
+    const [hasHydrated, setHasHydrated] = React.useState(false)
+    
     React.useEffect(() => {
+        if (!configResp || hasHydrated) return
+        
         const config = configResp?.data || configResp
-        if (config && (config.flow || config.rules)) {
-            setFlow(config.flow || [])
-            setThreshold(config.threshold || 75)
-            setRules(config.rules || [])
-            setScoringRules(config.scoringRules || [])
+        if (config && Object.keys(config).length > 0) {
+            if (config.flow) setFlow(config.flow)
+            if (config.threshold) setThreshold(config.threshold)
+            if (config.rules) setRules(config.rules)
+            if (config.scoringRules) setScoringRules(config.scoringRules)
+            setHasHydrated(true)
         }
-    }, [configResp])
+    }, [configResp, hasHydrated])
 
     const handleDelete = (id) => setFlow(flow.filter(f => f.id !== id))
-    const handleAdd = () => setFlow([...flow, { id: Date.now(), q: "", t: "CustomField" }])
+    const handleAdd = () => setFlow([...flow, { id: Date.now(), q: "", t: "NEW_KEY" }])
     const handleUpdate = (id, val) => setFlow(flow.map(f => f.id === id ? { ...f, q: val } : f))
+    const handleTagUpdate = (id, val) => setFlow(flow.map(f => f.id === id ? { ...f, t: val } : f))
 
     const handleToggleRule = (id) => {
         setRules(rules.map(r => r.id === id ? { ...r, active: !r.active } : r))
     }
 
+    const handleAddScoringRule = () => {
+        setScoringRules([...scoringRules, { id: Date.now(), desc: 'New Constraint', score: 10 }])
+    }
+
+    const handleDeleteScoringRule = (id) => {
+        setScoringRules(scoringRules.filter(r => r.id !== id))
+    }
+
     return (
-        <div className="max-w-7xl mx-auto space-y-12 pb-20">
+        <div className="max-w-7xl mx-auto space-y-8 md:space-y-12 pb-20 w-full min-w-0 px-4 sm:px-0">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-[#111827] uppercase tracking-tight flex items-center gap-3">
-                        <Cpu className="text-indigo-600" size={32} />
+                    <h1 className="text-2xl md:text-3xl font-black text-[#111827] uppercase tracking-tight flex flex-wrap items-center gap-2 md:gap-3">
+                        <Cpu className="text-indigo-600 shrink-0" size={24} md:size={32} />
                         Intelligence Orchestration
                     </h1>
-                    <p className="text-sm font-medium text-gray-500 uppercase tracking-widest mt-1">Configure NLP flow architectures and autonomous extraction parameters.</p>
+                    <p className="text-[10px] md:text-sm font-medium text-gray-500 uppercase tracking-widest mt-1">Configure NLP flow architectures and autonomous extraction parameters.</p>
                 </div>
-                <button
-                    onClick={() => publishFlow.mutate({ flow, threshold, rules, scoringRules })}
-                    className="group relative flex items-center gap-4 bg-[#111827] text-white px-10 py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-2xl shadow-indigo-100 active:scale-95"
-                >
-                    <Save size={18} strokeWidth={2.5} />
-                    Deploy Global Protocol
-                </button>
+                <div className="w-full sm:w-auto mt-2 sm:mt-0">
+                    <button
+                        onClick={async () => {
+                            try {
+                                setHasHydrated(false) // Trigger potential re-hydration on next data arrival
+                                await publishFlow.mutateAsync({ 
+                                    flow, 
+                                    threshold: parseInt(threshold), 
+                                    rules, 
+                                    scoringRules 
+                                })
+                                // Notification handled by mutation hook successMessage
+                            } catch (error) {
+                                // Error handled by mutation hook errorMessage
+                            }
+                        }}
+                        disabled={publishFlow.isPending}
+                        className="group relative flex items-center justify-center gap-2 md:gap-4 bg-[#111827] text-white px-6 md:px-10 py-4 md:py-5 rounded-xl md:rounded-[1.5rem] font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-indigo-100 active:scale-95 disabled:opacity-50 w-full"
+                    >
+                        {publishFlow.isPending ? <RefreshCcw className="animate-spin shrink-0" size={16} md:size={18} /> : <Save size={16} md:size={18} strokeWidth={2.5} className="shrink-0" />}
+                        {publishFlow.isPending ? "Deploying..." : "Deploy Global Protocol"}
+                    </button>
+                </div>
             </div>
 
-            <div className="crm-card flex items-center gap-2 justify-center overflow-x-auto">
-                <PipelineStage label="Init Response" icon={MessageSquare} completed />
-                <PipelineStage label="Intent Sync" icon={BrainCircuit} completed />
-                <PipelineStage label="Qualification" icon={Zap} active />
-                <PipelineStage label="CRM Master Sync" icon={Database} />
+            <div className="crm-card w-full max-w-full flex items-center overflow-x-auto no-scrollbar pb-4 pt-4 px-4 md:px-8 bg-transparent md:bg-white border-0 md:border shadow-none md:shadow-2xl">
+                <div className="flex items-center gap-2 md:gap-4 min-w-max mx-auto md:mx-0 pr-4">
+                    <PipelineStage label="Init Response" icon={MessageSquare} completed={activeStage !== 'Init Response'} active={activeStage === 'Init Response'} onClick={() => setActiveStage('Init Response')} />
+                    <PipelineStage label="Intent Sync" icon={BrainCircuit} completed={activeStage !== 'Intent Sync'} active={activeStage === 'Intent Sync'} onClick={() => setActiveStage('Intent Sync')} />
+                    <PipelineStage label="Qualification" icon={Zap} completed={activeStage !== 'Qualification'} active={activeStage === 'Qualification'} onClick={() => setActiveStage('Qualification')} />
+                    <PipelineStage label="CRM Master Sync" icon={Database} completed={activeStage !== 'CRM Master Sync'} active={activeStage === 'CRM Master Sync'} onClick={() => setActiveStage('CRM Master Sync')} />
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 <div className="lg:col-span-8 space-y-10">
                     <section className="space-y-6">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                                 <h3 className="text-sm font-black text-[#111827] uppercase tracking-widest flex items-center gap-2">
                                     <Activity className="text-indigo-600" size={18} />
@@ -163,7 +224,7 @@ const AdminAIConfig = () => {
                             </div>
                             <button
                                 onClick={handleAdd}
-                                className="bg-white text-indigo-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 px-6 py-3 rounded-2xl border border-indigo-100 hover:bg-indigo-50 transition-all shadow-sm"
+                                className="bg-white text-indigo-600 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border border-indigo-100 hover:bg-indigo-50 transition-all shadow-sm w-full sm:w-auto"
                             >
                                 <Plus size={14} strokeWidth={3} /> Inject Logic Step
                             </button>
@@ -179,6 +240,7 @@ const AdminAIConfig = () => {
                                         index={i}
                                         onDelete={() => handleDelete(item.id)}
                                         onChange={(val) => handleUpdate(item.id, val)}
+                                        onTagChange={(val) => handleTagUpdate(item.id, val)}
                                     />
                                 ))}
                             </AnimatePresence>
@@ -187,19 +249,20 @@ const AdminAIConfig = () => {
 
                     <section className="space-y-6">
                         <div>
-                            <h3 className="text-sm font-black text-[#111827] uppercase tracking-widest flex items-center gap-2">
-                                <Scale className="text-indigo-600" size={18} />
+                            <h3 className="text-xs md:text-sm font-black text-[#111827] uppercase tracking-widest flex items-center gap-2">
+                                <Scale className="text-indigo-600 shrink-0" size={16} md:size={18} />
                                 Lead Scoring Matrix
                             </h3>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase mt-1">Weights for autonomous lead prioritization</p>
+                            <p className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase mt-1">Weights for autonomous lead prioritization</p>
                         </div>
-                        <div className="crm-card !p-0 overflow-hidden overflow-x-auto no-scrollbar">
-                            <table className="w-full text-left border-collapse min-w-[800px]">
+                        <div className="crm-card !p-0 overflow-hidden flex flex-col">
+                            <div className="overflow-x-auto no-scrollbar max-w-full">
+                            <table className="w-full text-left border-collapse min-w-[600px] md:min-w-[800px]">
                                 <thead>
                                     <tr className="bg-[#F9FAFB]/50">
-                                        <th className="px-8 py-5 font-black text-gray-400 uppercase tracking-widest text-[9px]">Constraint / Rule Identity</th>
-                                        <th className="px-8 py-5 font-black text-gray-400 uppercase tracking-widest text-[9px]">Impact (Points)</th>
-                                        <th className="px-8 py-5 font-black text-gray-400 uppercase tracking-widest text-[9px] text-right">Actions</th>
+                                        <th className="px-6 md:px-8 py-4 md:py-5 font-black text-gray-400 uppercase tracking-widest text-[9px] min-w-[200px]">Constraint / Rule Identity</th>
+                                        <th className="px-6 md:px-8 py-4 md:py-5 font-black text-gray-400 uppercase tracking-widest text-[9px] min-w-[120px]">Impact (Points)</th>
+                                        <th className="px-6 md:px-8 py-4 md:py-5 font-black text-gray-400 uppercase tracking-widest text-[9px] text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#E5E7EB]/50">
@@ -217,16 +280,23 @@ const AdminAIConfig = () => {
                                                 </span>
                                             </td>
                                             <td className="px-8 py-6 text-right">
-                                                <button className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-300 hover:text-indigo-600 transition-all shadow-sm active:scale-90 opacity-0 group-hover:opacity-100">
-                                                    <Edit2 size={14} />
+                                                <button 
+                                                    onClick={() => handleDeleteScoringRule(rule.id)}
+                                                    className="p-2.5 bg-white border border-gray-100 rounded-xl text-gray-300 hover:text-rose-600 transition-all shadow-sm active:scale-90 opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <Trash2 size={14} />
                                                 </button>
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
-                            <button className="w-full py-4 bg-gray-50/50 text-[9px] font-black text-gray-400 hover:text-indigo-600 uppercase tracking-[0.2em] transition-all border-t border-gray-100">
-                                <Plus size={10} className="inline mr-2" /> Append Scoring Constraint
+                            </div>
+                            <button 
+                                onClick={handleAddScoringRule}
+                                className="w-full py-3 md:py-4 bg-gray-50/50 text-[9px] font-black text-gray-400 hover:text-indigo-600 uppercase tracking-[0.2em] transition-all border-t border-gray-100 shrink-0"
+                            >
+                                <Plus size={10} className="inline mr-2 shrink-0" /> Append Scoring Constraint
                             </button>
                         </div>
                     </section>
@@ -321,3 +391,5 @@ const AdminAIConfig = () => {
 }
 
 export default AdminAIConfig
+
+

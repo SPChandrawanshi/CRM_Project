@@ -1,5 +1,5 @@
-// Admin - Service Users Page
 import { FaUserInjured, FaPlus, FaEdit, FaTrash, FaEye } from 'react-icons/fa'
+import { useAdminActions } from '../../../hooks/useCrmMutations'
 
 const ServiceUsers = () => {
     const serviceUsers = [
@@ -7,6 +7,7 @@ const ServiceUsers = () => {
         { id: 2, name: 'Client B', address: '456 Oak Ave', funder: 'Private', carePlan: 'Active' },
         { id: 3, name: 'Client C', address: '789 Pine Rd', funder: 'Council', carePlan: 'Under Review' },
     ]
+    const { executeAction } = useAdminActions()
 
     return (
         <div className="p-6">
@@ -19,8 +20,9 @@ const ServiceUsers = () => {
                     <p className="text-gray-600">Manage service user profiles</p>
                 </div>
                 <button
-                    onClick={() => alert('Add Service User functionality coming soon!')}
-                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:shadow-lg transition-all"
+                    onClick={() => executeAction.mutate('add_service_user')}
+                    disabled={executeAction.isPending}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
                 >
                     <FaPlus />
                     Add Service User
@@ -56,20 +58,23 @@ const ServiceUsers = () => {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
                                             <button
-                                                onClick={() => alert(`Viewing details for ${user.name}...`)}
-                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                onClick={() => executeAction.mutate('view_service_user')}
+                                                disabled={executeAction.isPending}
+                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
                                             >
                                                 <FaEye />
                                             </button>
                                             <button
-                                                onClick={() => alert(`Editing ${user.name}...`)}
-                                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                onClick={() => executeAction.mutate('edit_service_user')}
+                                                disabled={executeAction.isPending}
+                                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
                                             >
                                                 <FaEdit />
                                             </button>
                                             <button
-                                                onClick={() => alert(`Deleting ${user.name}...`)}
-                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                onClick={() => executeAction.mutate('delete_service_user')}
+                                                disabled={executeAction.isPending}
+                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                                             >
                                                 <FaTrash />
                                             </button>
@@ -86,3 +91,5 @@ const ServiceUsers = () => {
 }
 
 export default ServiceUsers
+
+

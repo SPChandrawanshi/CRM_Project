@@ -315,7 +315,7 @@ const Medication = () => {
             {/* View Medication Details Modal */}
             {showViewModal && selectedMedication && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                         <div className="bg-gradient-to-r from-cyan-500 to-teal-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
                             <h2 className="text-2xl font-bold">Medication Details</h2>
                             <button onClick={() => setShowViewModal(false)} className="text-white hover:text-gray-200">
@@ -324,7 +324,7 @@ const Medication = () => {
                         </div>
                         <div className="p-6">
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-sm text-gray-600 mb-1">Medicine ID</p>
                                         <p className="text-lg font-semibold text-gray-800">{selectedMedication.id}</p>
@@ -343,7 +343,7 @@ const Medication = () => {
                                         {selectedMedication.name}
                                     </p>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-sm text-gray-600 mb-1">Dosage</p>
                                         <p className="text-lg font-semibold text-gray-800">{selectedMedication.dosage}</p>
@@ -353,7 +353,7 @@ const Medication = () => {
                                         <p className="text-lg font-semibold text-gray-800">{selectedMedication.frequency}</p>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-sm text-gray-600 mb-1">Start Date</p>
                                         <p className="text-lg font-semibold text-gray-800">{selectedMedication.startDate}</p>
@@ -397,3 +397,5 @@ const Medication = () => {
 }
 
 export default Medication
+
+

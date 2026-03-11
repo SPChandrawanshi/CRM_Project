@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { useCounselorActions } from '../hooks/useCrmMutations'
-import apiClient from '../lib/apiClient'
+import api from '../services/api'
 import { useNavigate } from 'react-router-dom'
 import useAppStore from '../store/useStore'
 
@@ -47,7 +47,7 @@ const CounselorDashboard = () => {
     const { data: dashboardResp, refetch: refetchDash, isLoading: loadingDash } = useQuery({
         queryKey: ['counselor-dashboard'],
         queryFn: async () => {
-            const res = await apiClient.get('/dashboard/counselor');
+            const res = await api.get('/dashboard/counselor');
             return res.data;
         }
     })
@@ -57,7 +57,7 @@ const CounselorDashboard = () => {
     const { data: myLeadsResp, refetch: refetchLeads, isLoading: loadingLeads } = useQuery({
         queryKey: ['counselor-leads'],
         queryFn: async () => {
-            const res = await apiClient.get('/counselor/leads');
+            const res = await api.get('/counselor/leads');
             return res.data || res;
         }
     })
@@ -98,10 +98,16 @@ const CounselorDashboard = () => {
                     <p className="text-sm font-medium text-[#6B7280] mt-1">Manage your pipeline, engage leads, and track performance.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="bg-white border text-gray-600 border-gray-200 px-5 py-2.5 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-gray-50 hover:text-indigo-600 transition-all shadow-sm flex items-center gap-2">
+                    <button 
+                        onClick={() => navigate('/analytics')}
+                        className="bg-white border text-gray-600 border-gray-200 px-5 py-2.5 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-gray-50 hover:text-indigo-600 transition-all shadow-sm flex items-center gap-2"
+                    >
                         <Filter size={14} /> Global Filters
                     </button>
-                    <button className="bg-[#111827] text-white px-5 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-indigo-100 flex items-center gap-2">
+                    <button 
+                        onClick={() => navigate('/counselor/calls')}
+                        className="bg-[#111827] text-white px-5 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-indigo-100 flex items-center gap-2"
+                    >
                         <Calendar size={14} /> Schedule Follow-up
                     </button>
                 </div>
@@ -271,7 +277,11 @@ const CounselorDashboard = () => {
                                                 >
                                                     <FileEdit size={16} />
                                                 </button>
-                                                <button className="w-8 h-8 flex items-center justify-center border border-gray-100 rounded-xl text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-all shadow-sm bg-white shrink-0" title="View Profile">
+                                                <button 
+                                                    onClick={() => navigate('/leads')}
+                                                    className="w-8 h-8 flex items-center justify-center border border-gray-100 rounded-xl text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-all shadow-sm bg-white shrink-0" 
+                                                    title="View Profile"
+                                                >
                                                     <ExternalLink size={16} />
                                                 </button>
                                             </div>
@@ -302,20 +312,22 @@ const CounselorDashboard = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
-                            onClick={() => setNoteModalOpen(null)}
-                        />
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-3xl shadow-2xl z-50 overflow-hidden border border-gray-100"
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+                            onClick={(e) => {
+                                if (e.target === e.currentTarget) setNoteModalOpen(null);
+                            }}
                         >
-                            <div className="p-6 border-b border-gray-100 bg-gray-50/50">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]"
+                            >
+                                <div className="p-6 border-b border-gray-100 bg-gray-50/50 shrink-0">
                                 <h2 className="text-lg font-black text-[#111827] uppercase tracking-tight">Add Operational Note</h2>
                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1 text-indigo-600">Lead: {noteModalOpen.name}</p>
                             </div>
-                            <div className="p-6">
+                            <div className="p-6 overflow-y-auto custom-scrollbar">
                                 <textarea
                                     className="w-full h-32 p-4 border border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all shadow-sm text-sm"
                                     placeholder="Enter internal progression notes here..."
@@ -338,6 +350,7 @@ const CounselorDashboard = () => {
                                     </button>
                                 </div>
                             </div>
+                            </motion.div>
                         </motion.div>
                     </>
                 )}
@@ -347,3 +360,5 @@ const CounselorDashboard = () => {
 }
 
 export default CounselorDashboard
+
+

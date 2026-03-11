@@ -3,7 +3,7 @@ import { Phone, Facebook, MousePointer2, Plus, Filter, Globe, Calendar, Clock, L
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../../lib/utils'
 import { useQuery } from '@tanstack/react-query'
-import apiClient from '../../lib/apiClient'
+import api from '../../services/api'
 import { useChannelActions } from '../../hooks/useCrmMutations'
 
 const TabButton = ({ active, label, icon: Icon, onClick }) => (
@@ -33,7 +33,7 @@ const GenerateScriptModal = ({ widget, onClose }) => {
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-white rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl">
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-white rounded-[2.5rem] w-full max-w-xl overflow-hidden shadow-2xl mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                 <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
                     <div>
                         <h3 className="text-xl font-black text-[#111827] uppercase tracking-tight">Deployment Script</h3>
@@ -77,32 +77,32 @@ const ChannelSetup = () => {
                 'facebook': 'Facebook',
                 'website': 'Website'
             };
-            const response = await apiClient.get('/channels', { params: { type: typeMap[activeTab] } });
+            const response = await api.get('/channels', { params: { type: typeMap[activeTab] } });
             return response.data || response;
         }
     })
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8 pb-12">
-            <div className="flex items-center justify-between">
+        <div className="max-w-7xl mx-auto space-y-8 pb-12 w-full min-w-0 px-4 sm:px-0">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-[#111827] uppercase tracking-tight">Channel Setup</h1>
                     <p className="text-sm font-medium text-gray-500 uppercase tracking-widest mt-1">Provision and manage multi-protocol communication nodes.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto no-scrollbar pb-2 md:pb-0">
                     <TabButton active={activeTab === 'whatsapp'} label="WhatsApp" icon={Phone} onClick={() => setActiveTab('whatsapp')} />
                     <TabButton active={activeTab === 'facebook'} label="Facebook" icon={Facebook} onClick={() => setActiveTab('facebook')} />
                     <TabButton active={activeTab === 'website'} label="Website Widget" icon={MousePointer2} onClick={() => setActiveTab('website')} />
                 </div>
             </div>
 
-            <div className="crm-card !p-0 min-h-[500px]">
-                <div className="p-8 border-b border-[#E5E7EB] bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="crm-card !p-0 min-h-[500px] w-full min-w-0 overflow-hidden">
+                <div className="p-4 sm:p-8 border-b border-[#E5E7EB] bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
                     <div>
                         <h3 className="font-black text-[#111827] text-xs uppercase tracking-[0.2em]">{activeTab} Node terminal</h3>
-                        <p className="text-[10px] font-medium text-gray-400 mt-1 uppercase tracking-widest">Active orchestration of {activeTab} instances</p>
+                        <p className="text-[10px] font-medium text-gray-400 mt-1 uppercase tracking-widest leading-none">Active orchestration of {activeTab} instances</p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                         <button className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#6B7280] hover:text-indigo-600 transition-all shadow-sm">
                             <Filter size={14} />
                             Filter by Country
@@ -117,7 +117,7 @@ const ChannelSetup = () => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto no-scrollbar">
+                <div className="overflow-x-auto no-scrollbar w-full max-w-full">
                     <table className="w-full text-left border-collapse min-w-[800px]">
                         <thead>
                             <tr className="bg-[#F9FAFB]/50">
@@ -225,7 +225,7 @@ const ChannelSetup = () => {
             <AnimatePresence>
                 {showAddForm && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                        <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl">
+                        <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl mx-2 sm:mx-auto max-h-[85vh] overflow-y-auto no-scrollbar">
                             <div className="p-8 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                                 <div>
                                     <h3 className="text-xl font-black text-[#111827] uppercase tracking-tight">Provision Node</h3>
@@ -266,7 +266,7 @@ const ChannelSetup = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 mt-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
                                     <button type="button" onClick={() => setShowAddForm(false)} className="px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest text-gray-400 hover:bg-gray-50 transition-all">Abort</button>
                                     <button type="submit" className="px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100">Initialize</button>
                                 </div>
@@ -283,3 +283,5 @@ const ChannelSetup = () => {
 }
 
 export default ChannelSetup
+
+
